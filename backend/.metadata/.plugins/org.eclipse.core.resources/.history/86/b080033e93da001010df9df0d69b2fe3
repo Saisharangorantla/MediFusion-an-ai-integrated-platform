@@ -1,0 +1,15 @@
+package com.yourorg.telemedicine.dto;
+
+import lombok.Data;
+
+@Data
+public class RecommendedDoctorDTO {
+ private Long doctorId;
+ private String name;
+ private String specialization;
+ private String city;
+ private Double rating;
+
+ // getters and setters
+}
+

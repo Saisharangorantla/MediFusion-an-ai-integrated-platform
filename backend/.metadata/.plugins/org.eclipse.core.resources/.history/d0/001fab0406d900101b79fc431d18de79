@@ -1,0 +1,60 @@
+package com.yourorg.telemedicine.ai.service;
+
+import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class AIChatService {
+
+
+private final OpenAIClient openAIClient;
+private final AIChatSessionRepository sessionRepo;
+private final AIChatMessageRepository messageRepo;
+private final PromptBuilder promptBuilder;
+
+
+public Mono<String> chat(ChatRequestDto dto) {
+
+
+AIChatSessionEntity session = dto.getSessionId() == null
+? sessionRepo.save(newSession(dto.getUserId()))
+: sessionRepo.findById(dto.getSessionId()).orElseThrow();
+
+
+saveMessage(session, AIChatMessageEntity.Role.USER, dto.getMessage());
+
+
+List<AIChatMessageEntity> history =
+messageRepo.findTop10BySessionIdOrderByCreatedAtAsc(session.getId());
+
+
+String prompt = promptBuilder.build(history, dto.getMessage());
+
+
+return openAIClient.chat(prompt)
+.map(reply -> {
+saveMessage(session, AIChatMessageEntity.Role.AI, reply);
+return reply;
+});
+}
+
+
+private AIChatSessionEntity newSession(Long userId) {
+AIChatSessionEntity s = new AIChatSessionEntity();
+s.setUserId(userId);
+return s;
+}
+
+
+private void saveMessage(AIChatSessionEntity session,
+AIChatMessageEntity.Role role,
+String msg) {
+AIChatMessageEntity m = new AIChatMessageEntity();
+m.setSession(session);
+m.setRole(role);
+m.setMessage(msg);
+messageRepo.save(m);
+}
+}

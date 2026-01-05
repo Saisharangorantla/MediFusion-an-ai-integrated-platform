@@ -1,0 +1,24 @@
+package com.yourorg.authservice;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+@SpringBootApplication(
+		scanBasePackages = {
+				"com.yourorg.authservice",
+				"com.yourorg.telemedicine"
+		}
+)
+@EntityScan("com.yourorg.telemedicine.entity")
+@EnableJpaRepositories(basePackages = "com.yourorg.telemedicine.repo")
+@EnableDiscoveryClient
+public class AuthServiceApplication  {
+
+	public static void main(String[] args) {
+		SpringApplication.run(AuthServiceApplication.class, args);
+	}
+
+}

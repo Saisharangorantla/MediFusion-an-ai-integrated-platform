@@ -1,0 +1,38 @@
+package com.yourorg.telemedicine.alert.entity;
+
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import lombok.Data;
+
+
+@Entity
+@Table(name = "alerts")
+@Data
+public class Alert {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long patientId;
+
+    @Column(length = 500)
+    private String message;
+
+    private String severity; // NORMAL | RISK | CRITICAL
+
+    private LocalDateTime createdAt;
+
+    public Alert() {}
+
+    public Alert(Long patientId, String message, String severity) {
+        this.patientId = patientId;
+        this.message = message;
+        this.severity = severity;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // getters & setters
+}
+

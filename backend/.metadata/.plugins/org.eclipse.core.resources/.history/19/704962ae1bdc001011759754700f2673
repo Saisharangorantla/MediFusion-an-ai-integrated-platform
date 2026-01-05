@@ -1,0 +1,45 @@
+package com.yourorg.telemedicine.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.cloud.gateway.route.RouteLocator;
+import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+
+@Configuration
+public class GatewayConfig {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtFilter;
+
+    @Bean
+    public RouteLocator routes(RouteLocatorBuilder builder) {
+    	return builder.routes()
+
+                // ✅ AUTH SERVICE (NO JWT FILTER)
+                .route("auth-service", r -> r
+                    .path("/auth/**")
+                    .uri("lb://AUTH-SERVICE"))
+
+                // ✅ PATIENT SERVICE (JWT REQUIRED)
+                .route("patient-service", r -> r
+                    .path("/patients/**")
+                    .filters(f -> f.filter(jwtFilter))
+                    .uri("lb://PATIENT-SERVICE"))
+
+                // ✅ DOCTOR SERVICE (JWT REQUIRED)
+                .route("doctor-service", r -> r
+                    .path("/doctors/**")
+                    .filters(f -> f.filter(jwtFilter))
+                    .uri("lb://DOCTOR-SERVICE"))
+
+                // ✅ HEALTH RECORD SERVICE (JWT REQUIRED)
+                .route("record-service", r -> r
+                    .path("/records/**")
+                    .filters(f -> f.filter(jwtFilter))
+                    .uri("lb://HEALTH-RECORD-SERVICE"))
+
+                .build();
+        }
+}
+

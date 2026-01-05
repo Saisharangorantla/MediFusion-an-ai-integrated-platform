@@ -1,0 +1,5 @@
+package com.yourorg.telemedicine.config;
+
+public class JwtTokenProvider {
+
+}

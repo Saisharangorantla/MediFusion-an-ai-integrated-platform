@@ -1,0 +1,86 @@
+package com.yourorg.telemedicine.ai.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yourorg.telemedicine.ai.client.OpenAIClient;
+import com.yourorg.telemedicine.ai.client.WearableClient;
+import com.yourorg.telemedicine.ai.dto.ChatRequestDto;
+
+import com.yourorg.telemedicine.ai.dto.VitalReadingDto;
+
+import com.yourorg.telemedicine.ai.entity.ChatMessage;
+import com.yourorg.telemedicine.ai.entity.VitalReading;
+
+import com.yourorg.telemedicine.ai.repository.ChatMessageRepository;
+import com.yourorg.telemedicine.ai.repository.VitalReadingRepository;
+import com.yourorg.telemedicine.ai.util.PromptBuilder;
+
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+
+@Service
+public class AIChatService {
+
+    @Autowired
+    private ChatMessageRepository chatRepo;
+
+    @Autowired
+    private VitalReadingRepository vitalRepo;
+
+    @Autowired
+    private OpenAiService openAiService;
+
+    public String processChat(Long patientId, String userMessage) {
+
+        // 1. Save user message
+        chatRepo.save(new ChatMessage(patientId, "USER", userMessage, LocalDateTime.now()));
+
+        // 2. Get chat history
+        List<ChatMessage> history =
+            chatRepo.findTop10ByPatientIdOrderByTimestampDesc(patientId);
+
+        String historyText = history.stream()
+                .map(m -> m.getRole() + ": " + m.getMessage())
+                .collect(Collectors.joining("\n"));
+
+        // 3. Get latest vitals
+        VitalReading v =
+            vitalRepo.findTop1ByPatientIdOrderByTimestampDesc(patientId);
+
+        // 4. Build AI prompt
+        String prompt = """
+        Patient Vitals:
+        Heart Rate: %d
+        SpO2: %d
+        Blood Pressure: %d/%d
+
+        Conversation History:
+        %s
+
+        User Question:
+        %s
+
+        Give medical advice in simple words.
+        """.formatted(
+            v.getHeartRate(),
+            v.getSpo2(),
+            v.getSystolicBP(),
+            v.getDiastolicBP(),
+            historyText,
+            userMessage
+        );
+
+        // 5. Ask AI
+        String aiReply = openAiService.ask(prompt);
+
+        // 6. Save AI reply
+        chatRepo.save(new ChatMessage( patientId, "AI", aiReply, LocalDateTime.now()));
+
+        return aiReply;
+    }
+}

@@ -1,0 +1,47 @@
+package com.yourorg.telemedicine.ai.util;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
+import com.yourorg.telemedicine.ai.entity.ChatMessage;
+import com.yourorg.telemedicine.ai.entity.VitalReading;
+
+
+
+@Component
+public class PromptBuilder {
+
+    public String buildPrompt(
+            VitalReading vitals,
+            List<ChatMessage> history,
+            String userMessage) {
+
+        String historyText = history.stream()
+                .map(m -> m.getRole() + ": " + m.getMessage())
+                .collect(Collectors.joining("\n"));
+
+        return """
+        Patient Vitals:
+        Heart Rate: %d
+        SpO2: %d
+        Blood Pressure: %d/%d
+
+        Conversation History:
+        %s
+
+        User Question:
+        %s
+
+        Give advice in simple medical terms.
+        """.formatted(
+            vitals.getHeartRate(),
+            vitals.getSpo2(),
+            vitals.getSystolicBP(),
+            vitals.getDiastolicBP(),
+            historyText,
+            userMessage
+        );
+    }
+

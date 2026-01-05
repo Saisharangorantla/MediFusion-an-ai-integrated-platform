@@ -1,0 +1,75 @@
+package com.yourorg.telemedicine.controller;
+
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
+
+import com.yourorg.telemedicine.config.JwtTokenProvider;
+import com.yourorg.telemedicine.dto.AuthRequest;
+import com.yourorg.telemedicine.dto.AuthResponse;
+import com.yourorg.telemedicine.dto.UserDto;
+import com.yourorg.telemedicine.entity.User;
+import com.yourorg.telemedicine.service.JwtUserDetailsService;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.Authentication;
+
+@RestController
+@CrossOrigin
+public class AuthController {
+
+	@Autowired
+	private AuthenticationManager authenticationManager;
+
+	@Autowired
+	private JwtTokenProvider jwtTokenUtil;
+
+	@Autowired
+	private JwtUserDetailsService userDetailsService;
+
+	@PostMapping("/login")
+	public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthRequest authenticationRequest) throws Exception {
+		System.out.println("authenticating ..");
+	//	authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());
+	   //STEP1 - Authenticating ....
+		Authentication authentication  =authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
+
+		System.out.println("authentication success...");
+
+		//final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
+		UserDetails user = (UserDetails) authentication.getPrincipal();
+		//UserDetails user = (UserDetails) authentication.getPrincipal();
+		 String roles=userDetailsService.getRoles();
+		 roles = roles.replace("[", "").replace("]", "");
+         //GENERATE TOKEN
+		String token = jwtTokenUtil.generateToken(user,roles);
+		//final String token = jwtTokenUtil.generateToken(userDetails);
+		// String roles=userDetailsService.getRoles();
+		//Send to client as response
+		return ResponseEntity.ok(new AuthResponse(token,roles));
+	}
+
+	@PostMapping("/register")
+	public ResponseEntity<?> saveUser(
+			@RequestBody UserDto user) throws Exception {
+		User userDto= userDetailsService.save(user);
+		return ResponseEntity.ok(userDto);
+	}
+
+	private void authenticate(String username, String password) throws Exception {
+		try {
+			authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+		} catch (DisabledException e) {
+			throw new Exception("USER_DISABLED", e);
+		} catch (BadCredentialsException e) {
+			throw new Exception("INVALID_CREDENTIALS", e);
+		}
+	}
+}

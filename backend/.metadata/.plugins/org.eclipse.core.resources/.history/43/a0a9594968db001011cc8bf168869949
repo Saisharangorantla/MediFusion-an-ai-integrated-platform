@@ -1,0 +1,10 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.dto.DoctorDTO;
+import com.yourorg.telemedicine.entity.Doctor;
+
+public interface Doctorservice {
+	Doctor create(DoctorDTO dto);
+	
+
+}

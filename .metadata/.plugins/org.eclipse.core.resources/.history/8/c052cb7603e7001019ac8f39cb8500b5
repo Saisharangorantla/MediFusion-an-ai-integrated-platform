@@ -1,0 +1,22 @@
+package com.yourorg.telemedicine.dto;
+
+package com.yourorg.telemedicine.dto;
+
+public class DoctorRegisterRequest {
+
+    // common auth fields
+    private String username;
+    private String password;
+    private String email;
+    private String fullName;
+
+    // doctor-specific fields
+    private String specialization;
+    private String contact;
+    private Integer experienceYears;
+    private String qualification;
+    private String hospital;
+    private Double consultationFee;
+
+    // getters and setters
+}

@@ -1,0 +1,109 @@
+package com.yourorg.telemedicine.service;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.yourorg.authservice.client.PatientClient;
+import com.yourorg.telemedicine.dto.PatientCreateRequest;
+import com.yourorg.telemedicine.dto.PatientRequestDTO;
+import com.yourorg.telemedicine.dto.UserDto;
+import com.yourorg.telemedicine.entity.User;
+import com.yourorg.telemedicine.repo.UserRepository;
+
+@Service
+public class JwtUserDetailsService implements UserDetailsService {
+	@Autowired
+	private UserRepository userDao;
+	@Autowired
+	private PasswordEncoder bcryptEncoder;
+	@Autowired
+	private PatientClient patientClient;
+	private String roles;
+	@Override
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		System.out.println("---load by  uname ");
+		List<SimpleGrantedAuthority> roles = null;
+		User user = userDao.findByUsername(username);
+		if (user == null) {
+			throw new UsernameNotFoundException("User not found with username: " + username);
+		}
+		roles = Arrays.asList(new SimpleGrantedAuthority(user.getRole()));
+		System.out.println("Roles : "+roles);
+		setRoles(roles.toString());
+		return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
+				roles);
+	}
+	public String getRoles() {
+		return roles;
+	}
+	public void setRoles(String roles) {
+		this.roles = roles;
+	}
+	public User save(UserDto user) {
+		System.out.println("JwtUserDetailsService.save() - Received UserDto:");
+		System.out.println("  Username: " + user.getUsername());
+		System.out.println("  Email: " + user.getEmail());
+		System.out.println("  FullName: " + user.getFullName());
+		System.out.println("  Role: " + user.getRole());
+		
+		// Validate email is not null or empty
+		if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+			throw new RuntimeException("Email cannot be null or empty");
+		}
+		
+		// Check if username already exists
+		if (userDao.existsByUsername(user.getUsername())) {
+			throw new RuntimeException("Username already exists: " + user.getUsername());
+		}
+		
+		// Check if email already exists
+		if (userDao.existsByEmail(user.getEmail())) {
+			throw new RuntimeException("Email already exists: " + user.getEmail());
+		}
+		
+		User newUser = new User();
+		newUser.setUsername(user.getUsername());
+		newUser.setEmail(user.getEmail());
+		newUser.setFullName(user.getFullName());
+		newUser.setPassword(bcryptEncoder.encode(user.getPassword()));
+		newUser.setRole(user.getRole());
+
+		
+		User savedUser = userDao.save(newUser);
+
+		
+		// Automatically create patient profile if role is PATIENT or USER
+		if ("PATIENT".equalsIgnoreCase(user.getRole())) {
+
+            PatientCreateRequest patientReq = new PatientCreateRequest();
+            patientReq.setUserId(savedUser.getId());
+            patientReq.setName(user.getFullName());
+            patientReq.setGender(user.getGender());
+            patientReq.setContact(user.getContact());
+            patientReq.setEmail(user.getEmail());
+
+            patientClient.createPatient(patientReq);
+        }
+		}
+		
+		return savedUser;
+	}
+	
+	
+	
+	public User getUserByUsername(String username) {
+		return userDao.findByUsername(username);
+	}
+//	public User getUserByEmail(String email) {
+//        return userDao.existsByEmail(email).orElse(null);
+//    }
+
+}

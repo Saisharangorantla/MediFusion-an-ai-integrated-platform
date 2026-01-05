@@ -1,0 +1,20 @@
+package com.yourorg.telemedicine.dto;
+
+import lombok.Data;
+
+@Data
+public class DoctorCreateRequest extends BaseRegisterRequest{
+
+	 private String specialization;
+	    private String contact;
+	    private Integer experienceYears;
+	    private String qualification;
+	    private String hospital;
+	    private Double consultationFee;
+	    private String address;  
+	    private String gender;
+	    private String fullname;
+    // getters & setters
+}
+
+

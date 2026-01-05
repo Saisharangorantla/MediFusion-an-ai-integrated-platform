@@ -1,0 +1,22 @@
+package com.yourorg.telemedicine.alert.controller;
+
+
+import com.yourorg.telemedicine.alert.service.AlertService;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/alerts")
+public class AlertController {
+
+    private final AlertService alertService;
+
+    public AlertController(AlertService alertService) {
+        this.alertService = alertService;
+    }
+
+    @GetMapping("/check/{patientId}")
+    public String checkVitals(@PathVariable Long patientId) {
+        return alertService.checkVitalsAndNotify(patientId);
+    }
+}
+

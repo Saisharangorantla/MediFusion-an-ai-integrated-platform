@@ -1,0 +1,71 @@
+package com.yourorg.telemedicine.controller;
+
+import com.yourorg.telemedicine.dto.VitalReadingDto;
+import com.yourorg.telemedicine.dto.WearableDataDTO;
+import com.yourorg.telemedicine.entity.WearableDevice;
+import com.yourorg.telemedicine.service.WearableService;
+import com.yourorg.telemedicine.wearable.FitbitIntegrationService;
+import com.yourorg.telemedicine.wearable.AppleHealthIntegrationService;
+import com.yourorg.telemedicine.repository.WearableDeviceRepository;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/wearable")
+public class WearableController {
+	@Autowired
+    private  WearableService wearableService;
+	@Autowired
+    private  FitbitIntegrationService fitbitService;
+	@Autowired
+    private  AppleHealthIntegrationService appleService;
+	@Autowired
+    private WearableDeviceRepository deviceRepo;
+
+//    public WearableController(WearableService wearableService,
+//                              FitbitIntegrationService fitbitService,
+//                              AppleHealthIntegrationService appleService,
+//                              WearableDeviceRepository deviceRepo) {
+//        this.wearableService = wearableService;
+//        this.fitbitService = fitbitService;
+//        this.appleService = appleService;
+//        this.deviceRepo = deviceRepo;
+//    }
+
+    @PostMapping("/mock/{patientId}")
+    public ResponseEntity<WearableDataDTO> saveMock(@PathVariable Long patientId, @RequestBody WearableDataDTO dto) {
+        return ResponseEntity.ok(wearableService.mockSaveReading(patientId, dto));
+    }
+
+    @GetMapping("/fitbit/auth-url")
+    public ResponseEntity<String> fitbitAuthUrl() {
+        return ResponseEntity.ok(fitbitService.getAuthorizationUrl());
+    }
+
+    @GetMapping("/fitbit/callback")
+    public ResponseEntity<String> fitbitCallback(@RequestParam String code, @RequestParam(required=false) Long patientId) {
+        WearableDevice d = fitbitService.exchangeCodeForToken(code, patientId);
+        return ResponseEntity.ok("Connected Fitbit device: " + d.getExternalId());
+    }
+
+    @GetMapping("/apple/auth-url")
+    public ResponseEntity<String> appleAuthUrl() {
+        return ResponseEntity.ok(appleService.getAuthorizationUrl());
+    }
+
+    @GetMapping("/apple/callback")
+    public ResponseEntity<String> appleCallback(@RequestParam String code, @RequestParam(required=false) Long patientId) {
+        WearableDevice d = appleService.exchangeCodeForToken(code, patientId);
+        return ResponseEntity.ok("Connected Apple device: " + d.getExternalId());
+    }
+
+    @GetMapping("/wearables/vitals/recent/{patientId}")
+    public List<VitalReadingDto> getRecentVitals(@PathVariable Long patientId) {
+        return wearableService.getRecentVitals(patientId);
+    }
+
+}

@@ -1,0 +1,9 @@
+spring.application.name=doctor-service
+server.port=8085
+
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka
+
+# Twilio configuration
+twilio.account-sid=YOUR_TWILIO_ACCOUNT_SID
+twilio.auth-token=YOUR_TWILIO_AUTH_TOKEN
+twilio.from-number=+1234567890

@@ -1,0 +1,11 @@
+package com.yourorg.telemedicine.ai.dto;
+
+import lombok.Data;
+
+@Data
+public class OpenAiRequest {
+    private String model = "gpt-4o-mini";
+    private List<Message> messages;
+    private double temperature = 0.2;
+}
+

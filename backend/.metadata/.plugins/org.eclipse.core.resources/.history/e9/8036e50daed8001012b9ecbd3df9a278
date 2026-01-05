@@ -1,0 +1,13 @@
+package com.yourorg.doctorservice;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class DoctorService1Application {
+
+	public static void main(String[] args) {
+		SpringApplication.run(DoctorService1Application.class, args);
+	}
+
+}

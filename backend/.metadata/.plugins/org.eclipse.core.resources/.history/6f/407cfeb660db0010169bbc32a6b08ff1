@@ -1,0 +1,15 @@
+spring.application.name=wearable-service
+# Server configuration
+server.port=8081
+
+# Patient service URL
+patient.service.url=http://localhost:8083
+
+
+# Eureka client configuration
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka
+
+# Apple OAuth configuration
+apple.client-id=your-apple-client-id
+apple.client-secret=your-apple-client-secret
+apple.redirect-uri=http://localhost:8080/api/wearables/apple/callback

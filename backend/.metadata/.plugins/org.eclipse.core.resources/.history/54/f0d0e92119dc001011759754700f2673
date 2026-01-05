@@ -1,0 +1,31 @@
+package com.yourorg.telemedicine.controller;
+
+import com.yourorg.telemedicine.dto.HealthRecordDTO;
+import com.yourorg.telemedicine.service.HealthRecordService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/records")
+public class HealthRecordController {
+	@Autowired
+    private HealthRecordService service;
+
+	@PreAuthorize("hasAnyRole('PATIENT','DOCTOR')")
+    @PostMapping
+    public ResponseEntity<HealthRecordDTO> create(@RequestBody HealthRecordDTO dto) throws Exception {
+        return ResponseEntity.ok(service.create(dto));
+    }
+    // NEW: update endpoint so doctor can update patient record
+    @PutMapping("/{recordId}")
+    public ResponseEntity<HealthRecordDTO> update(
+            @PathVariable Long recordId,
+            @RequestBody HealthRecordDTO dto) throws Exception {
+
+        HealthRecordDTO updated = service.update(recordId, dto);
+        return ResponseEntity.ok(updated);
+    }
+}

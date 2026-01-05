@@ -1,0 +1,33 @@
+
+package com.yourorg.telemedicine.controller;
+
+import com.yourorg.wearable.entity.VitalData;
+import com.yourorg.wearable.repository.VitalRepository;
+import com.yourorg.wearable.service.VitalSimulatorService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/wearable")
+@CrossOrigin
+public class VitalController {
+
+    private final VitalSimulatorService simulator;
+    private final VitalRepository repo;
+
+    public VitalController(VitalSimulatorService simulator, VitalRepository repo) {
+        this.simulator = simulator;
+        this.repo = repo;
+    }
+
+    @PostMapping("/simulate/{patientId}")
+    public VitalData simulate(@PathVariable Long patientId) {
+        return simulator.generateVitals(patientId);
+    }
+
+    @GetMapping("/vitals/{patientId}")
+    public List<VitalData> getVitals(@PathVariable Long patientId) {
+        return repo.findByPatientId(patientId);
+    }
+}

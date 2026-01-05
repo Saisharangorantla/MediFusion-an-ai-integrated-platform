@@ -1,0 +1,9 @@
+spring.application.name=ai-service-1
+server.port=8080
+# OpenAI configuration
+openai.api.key=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
+openai.api.url=https://api.openai.com/v1/chat/completions
+
+## Eureka client configuration
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka
+spring.config.import=configserver:http://localhost:9500

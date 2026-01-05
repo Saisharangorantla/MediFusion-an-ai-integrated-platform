@@ -1,0 +1,8 @@
+package com.yourorg.telemedicine.ai.service;
+
+import com.yourorg.telemedicine.ai.entity.VitalReading;
+
+public interface AIChatService {
+	String processChat(Long patientId, String userMessage);
+	VitalReading syncLatestVitals(Long patientId);
+}

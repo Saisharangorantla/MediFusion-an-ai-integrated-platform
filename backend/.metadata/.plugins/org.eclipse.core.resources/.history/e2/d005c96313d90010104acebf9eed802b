@@ -1,0 +1,17 @@
+package com.yourorg.telemedicine.alert.client;
+
+
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import com.yourorg.telemedicine.alert.dto.AppointmentDTO;
+
+@FeignClient(name = "appointment-service")
+public interface AppointmentClient {
+
+	  @GetMapping("/appointments/active/{patientId}")
+	    AppointmentDTO getActiveAppointment(@PathVariable Long patientId);
+}
+

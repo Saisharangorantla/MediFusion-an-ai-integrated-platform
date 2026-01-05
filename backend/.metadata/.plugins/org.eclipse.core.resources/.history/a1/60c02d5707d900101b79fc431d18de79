@@ -1,0 +1,6 @@
+package com.yourorg.telemedicine.repository;
+
+import com.yourorg.telemedicine.entity.DeviceReading;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface DeviceReadingRepository extends JpaRepository<DeviceReading, Long> {}

@@ -1,0 +1,9 @@
+package com.yourorg.telemedicine.client;
+import org.springframework.cloud.openfeign.FeignClient;
+
+@FeignClient(name = "PATIENT-SERVICE")
+public interface PatientClient {
+    @GetMapping("/patients/ids")
+    List<Long> getAllPatientIds();
+}
+

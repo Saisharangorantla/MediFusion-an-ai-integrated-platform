@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="MavenProjectImportWizardPage">
+		<list key="rootDirectory">
+			<item value="D:\major project code\backend\video-call-service"/>
+			<item value="C:\Users\saish\Downloads\video-call-service"/>
+			<item value="C:\Users\saish\Downloads\wearable-service"/>
+			<item value="D:\major project code\backend\Auth-service"/>
+			<item value="D:\major project\final working codes\Auth-service"/>
+			<item value="D:\major project code\backend\ai-service"/>
+			<item value="D:\major project code\backend\eureka-service"/>
+			<item value="D:\major project code\backend\api-gate-way"/>
+			<item value="D:\major project code\backend"/>
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+	</section>
+	<section name="org.eclipse.m2e.core.pom.overview">
+	</section>
+	<section name="org.eclipse.m2e.core.pom.dependencies">
+	</section>
+</section>

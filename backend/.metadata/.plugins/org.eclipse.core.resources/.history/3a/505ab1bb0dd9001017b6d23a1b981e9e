@@ -1,0 +1,13 @@
+package com.yourorg.telemedicine.ai.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.yourorg.telemedicine.ai.entity.AIChatMessageEntity;
+import com.yourorg.telemedicine.ai.entity.AIChatSessionEntity;
+
+public interface AIChatSessionRepository
+extends JpaRepository<AIChatSessionEntity, Long> {
+	
+}

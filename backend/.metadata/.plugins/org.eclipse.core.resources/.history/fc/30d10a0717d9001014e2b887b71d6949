@@ -1,0 +1,39 @@
+package com.yourorg.telemedicine.controller;
+
+import com.yourorg.telemedicine.dto.DoctorDTO;
+import com.yourorg.telemedicine.service.DoctorService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/doctors")
+public class DoctorController {
+	@Autowired
+    private  DoctorService service;
+    //public DoctorController(DoctorService service) { this.service = service; }
+
+    @PostMapping
+    public ResponseEntity<DoctorDTO> create(@RequestBody DoctorDTO dto) {
+        return ResponseEntity.ok(service.create(dto));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<DoctorDTO> get(@PathVariable Long id) {
+        return ResponseEntity.ok(service.getById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<DoctorDTO>> list() {
+        return ResponseEntity.ok(service.listAll());
+    }
+    @PostMapping("/doctors/notify")
+    public void notifyDoctor(@RequestParam Long doctorId,
+    							@RequestParam Long patientId,
+                             @RequestParam String message) {
+        service.notifyDoctor(patientId,message,doctorId);
+    }
+}

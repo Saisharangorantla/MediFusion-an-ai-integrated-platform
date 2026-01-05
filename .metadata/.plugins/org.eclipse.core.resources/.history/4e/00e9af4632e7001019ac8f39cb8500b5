@@ -1,0 +1,23 @@
+package com.yourorg.telemedicine.service;
+
+import java.util.List;
+
+import com.yourorg.telemedicine.dto.AppointmentDTO;
+import com.yourorg.telemedicine.dto.AppointmentResponseDto;
+import com.yourorg.telemedicine.dto.CreateAppointmentRequest;
+
+public interface AppointmentService {
+
+    // ✅ CREATE APPOINTMENT
+    AppointmentDTO create(CreateAppointmentRequest request);
+
+    // ✅ ACTIVE APPOINTMENT
+    AppointmentResponseDto getActiveAppointment(Long patientId);
+
+    // ✅ GET APPOINTMENTS
+    List<AppointmentDTO> getAppointmentsByPatientId(Long patientId);
+    List<AppointmentDTO> getAppointmentsByDoctorId(Long doctorId);
+
+    // ✅ UPDATE STATUS
+    AppointmentDTO updateStatus(Long appointmentId, String status);
+}

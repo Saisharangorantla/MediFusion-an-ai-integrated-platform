@@ -1,0 +1,65 @@
+package com.yourorg.telemedicine.alert.service;
+
+import com.yourorg.telemedicine.alert.client.PatientClient;
+import com.yourorg.telemedicine.alert.client.WearableClient;
+import com.yourorg.telemedicine.alert.dto.VitalData;
+import com.yourorg.telemedicine.alert.kafka.AlertProducer;
+import com.yourorg.telemedicine.alert.ml.VitalTrendAnalyzer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class AlertServiceImpl implements AlertService {
+
+    @Autowired
+    private WearableClient wearableClient;
+
+    @Autowired
+    private PatientClient patientClient;
+
+    @Autowired
+    private AlertProducer alertProducer;
+
+    @Autowired
+    private VitalTrendAnalyzer trendAnalyzer;
+    @Autowired
+    private AlertRepository alertRepository;
+
+
+    @Override
+    public String checkVitalsAndNotify(Long patientId) {
+
+        // 1️⃣ Fetch recent vitals
+        List<VitalData> vitalsList =
+                wearableClient.getRecentVitals(patientId);
+
+        if (vitalsList == null || vitalsList.isEmpty()) {
+            return "No vitals found. Alert not sent.";
+        }
+
+        // 2️⃣ ML / Rule-based analysis
+        boolean risk = trendAnalyzer.isHealthRisk(vitalsList);
+        boolean criticalRisk = trendAnalyzer.isCriticalRisk(vitalsList);
+
+        if (!risk) {
+            return "Vitals stable (ML analysis)";
+        }
+
+        // 3️⃣ Notify PATIENT only
+        String patientMessage =
+                criticalRisk
+                        ? "🚨 CRITICAL ALERT: Abnormal vitals detected. Please seek medical help immediately."
+                        : "⚠️ Health alert: Unusual vitals detected. Monitor closely.";
+
+        patientClient.notifyPatient(patientId, patientMessage);
+
+        // 4️⃣ Publish alert to Kafka (optional, for logs / analytics)
+        alertProducer.sendAlert(
+                "Alert sent to patient " + patientId + " | Critical=" + criticalRisk
+        );
+
+        return "Alert sent to patient";
+    }
+}

@@ -1,0 +1,47 @@
+package com.yourorg.telemedicine.entity;
+
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+
+@Entity
+@Table(name = "patients")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Patient {
+    @Id 
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @NotBlank(message = "Fullname is required")
+    @Column(nullable = false)
+    private String Fullname;
+    
+    @NotBlank(message = "gender is required")
+    @Column(nullable = false)
+    private String gender;
+    
+    @NotBlank(message = "contact is required")
+    @Column(nullable = false)
+    private String contact;
+    
+    @NotBlank(message = "email is required")
+    @Email(message = "email must be a valid email address")
+    @Column(nullable = false)
+    private String email;
+    
+    @NotBlank(message = "address is required")
+    @Column(nullable = false)
+    private String address;
+    
+    private Integer age;
+    
+    // link to User if needed
+    @NotNull(message = "userId is required")
+    @Column(nullable = false)
+    private Long userId; // ONLY store ID from auth-service
+}

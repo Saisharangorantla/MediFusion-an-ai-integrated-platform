@@ -1,0 +1,15 @@
+package com.yourorg.telemedicine.client;
+
+
+
+import com.yourorg.telemedicine.entity.VitalData;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+@FeignClient(name = "ALERT-SERVICE")
+public interface AlertClient {
+
+    @PostMapping("/alerts/check/{patientId}")
+    String sendVitals(@PathVariable Long patientId);
+}

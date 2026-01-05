@@ -1,0 +1,120 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.dto.WearableDataDTO;
+import com.yourorg.telemedicine.entity.DeviceReading;
+import com.yourorg.telemedicine.entity.WearableDevice;
+import com.yourorg.telemedicine.repository.DeviceReadingRepository;
+import com.yourorg.telemedicine.repository.WearableDeviceRepository;
+import com.yourorg.telemedicine.client.PatientClient;
+import com.yourorg.telemedicine.dto.PatientDto;
+import com.yourorg.telemedicine.dto.VitalReadingDto;
+import com.yourorg.telemedicine.exception.ResourceNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * WearableService — uses PatientClient to validate patient existence,
+ * stores only patientId inside WearableDevice (no Patient entity).
+ */
+@Service
+public class WearableService {
+
+    private final WearableDeviceRepository deviceRepo;
+    private final DeviceReadingRepository readingRepo;
+    private final PatientClient patientClient;
+
+    public WearableService(WearableDeviceRepository deviceRepo,
+                           DeviceReadingRepository readingRepo,
+                           PatientClient patientClient) {
+        this.deviceRepo = deviceRepo;
+        this.readingRepo = readingRepo;
+        this.patientClient = patientClient;
+    }
+
+    /**
+     * Create a mock device and a reading for given patientId.
+     * Validates patient via patient-service (Feign client).
+     */
+    @Transactional
+    public WearableDataDTO mockSaveReading(Long patientId, WearableDataDTO dto) {
+        // Validate patient existence (remote call)
+        PatientDto p;
+        try {
+            p = patientClient.getPatient(patientId);
+        } catch (Exception ex) {
+            throw new ResourceNotFoundException("Patient not found or patient-service unavailable");
+        }
+        if (p == null || p.getId() == null) {
+            throw new ResourceNotFoundException("Patient not found");
+        }
+
+        // Create device and associate by patientId (store ID only)
+        WearableDevice dev = new WearableDevice();
+        dev.setProvider(dto.getProvider());
+        dev.setPatientId(patientId);                      // <-- IMPORTANT: ID only
+        dev.setExternalId("mock-" + System.currentTimeMillis());
+        dev = deviceRepo.save(dev);
+
+        // Create reading linked to device
+        DeviceReading r = new DeviceReading();
+        r.setDevice(dev); // ok because device is local entity in this service
+        r.setType(dto.getType());
+        r.setValue(dto.getValue());
+        r.setTimestamp(dto.getTimestamp() == null ? LocalDateTime.now() : dto.getTimestamp());
+        readingRepo.save(r);
+
+        return dto;
+    }
+
+    /**
+     * Save reading coming from a real provider for an existing device.
+     * Expects the caller to provide a WearableDevice entity (already local).
+     */
+    @Transactional
+    public WearableDataDTO saveFromProvider(WearableDevice device, WearableDataDTO dto) {
+        // Optional: validate device exists / belongs to patient if needed
+        DeviceReading r = new DeviceReading();
+        r.setDevice(device);
+        r.setType(dto.getType());
+        r.setValue(dto.getValue());
+        r.setTimestamp(dto.getTimestamp() == null ? LocalDateTime.now() : dto.getTimestamp());
+        readingRepo.save(r);
+        return dto;
+    }
+    public List<VitalReadingDto> getRecentVitals(Long patientId) {
+    	// Dummy data (later replace with DB / IoT device input)
+        List<VitalReadingDto> vitalsList = new ArrayList<>();
+        
+        VitalReadingDto v1 = new VitalReadingDto();
+        v1.setPatientId(patientId);
+        v1.setHeartRate(105);
+        v1.setSpo2(94);
+        v1.setSystolicBP(130);
+        v1.setDiastolicBP(85);
+
+        VitalReadingDto v2 = new VitalReadingDto();
+        v2.setPatientId(patientId);
+        v2.setHeartRate(115);
+        v2.setSpo2(91);
+        v2.setSystolicBP(135);
+        v2.setDiastolicBP(90);
+
+        VitalReadingDto v3 = new VitalReadingDto();
+        v3.setPatientId(patientId);
+        v3.setHeartRate(130);   // high
+        v3.setSpo2(88);         // low
+        v3.setSystolicBP(140);
+        v3.setDiastolicBP(95);
+
+        vitalsList.add(v1);
+        vitalsList.add(v2);
+        vitalsList.add(v3);
+
+        return vitalsList;
+    }
+
+}

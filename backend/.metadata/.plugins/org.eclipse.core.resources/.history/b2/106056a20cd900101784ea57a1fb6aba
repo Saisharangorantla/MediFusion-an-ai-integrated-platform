@@ -1,0 +1,10 @@
+package com.yourorg.telemedicine.ai.dto;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Message {
+    private String role; // system, user
+    private String content;
+}
+

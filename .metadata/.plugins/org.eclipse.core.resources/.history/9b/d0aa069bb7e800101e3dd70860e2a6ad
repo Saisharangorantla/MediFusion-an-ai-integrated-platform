@@ -1,0 +1,7 @@
+package com.yourorg.telemedicine.ai.service;
+
+
+public interface GeminiService {
+    String ask(String prompt);
+}
+

@@ -1,0 +1,78 @@
+package com.yourorg.telemedicine.alert.service;
+
+import com.yourorg.telemedicine.alert.client.AppointmentClient;
+import com.yourorg.telemedicine.alert.client.DoctorClient;
+import com.yourorg.telemedicine.alert.client.PatientClient;
+import com.yourorg.telemedicine.alert.client.WearableClient;
+import com.yourorg.telemedicine.alert.dto.AppointmentResponseDTO;
+import com.yourorg.telemedicine.alert.dto.VitalReadingDto;
+import com.yourorg.telemedicine.alert.kafka.AlertProducer;
+import com.yourorg.telemedicine.alert.ml.VitalTrendAnalyzer;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AlertServiceImpl implements AlertService {
+
+    @Autowired
+    private WearableClient wearableClient;
+
+    @Autowired
+    private DoctorClient doctorClient;
+
+    @Autowired
+    private AppointmentClient appointmentClient;
+
+    @Autowired
+    private AlertProducer alertProducer;
+
+    @Autowired
+    private VitalTrendAnalyzer trendAnalyzer;
+    @Autowired
+    private PatientClient  patientclient;
+
+    public String checkVitalsAndNotify(Long patientId) {
+
+        // 1️⃣ Check appointment & fetch doctorId
+    	AppointmentResponseDTO appointment =
+                appointmentClient.getActiveAppointment(patientId);
+
+        if (appointment == null || !appointment.isActive()) {
+            return "No active appointment. Alert not sent.";
+        }
+
+        Long doctorId = appointment.getDoctorId();
+
+        // 2️⃣ Fetch recent vitals (trend data)
+        List<VitalReadingDto> vitalsList =
+                wearableClient.getRecentVitals(patientId);
+
+        // 3️⃣ ML / DMML trend analysis
+        boolean risk = trendAnalyzer.isHealthRisk(vitalsList);
+        boolean criticalRisk = trendAnalyzer.isCriticalRisk(vitalsList);
+
+
+        if (risk) {
+            String message =
+                    "ML Alert 🚨: Health risk trend detected for patient " + patientId;
+
+            // 4️⃣ Notify ONLY the assigned doctor
+            doctorClient.notifyDoctor(doctorId, message);
+         // notify patient ONLY for critical risk
+            if (criticalRisk) {
+                patientclient.notifyPatient(patientId,
+                        "⚠️ Critical health alert! Please seek medical attention.");
+            }
+
+            // 5️⃣ Publish alert to Kafka
+            alertProducer.sendAlert(message);
+
+            return "ALERT SENT TO DOCTOR " + doctorId;
+        }
+
+        return "Vitals stable (ML analysis)";
+    }
+}

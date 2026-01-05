@@ -1,0 +1,35 @@
+package com.yourorg.telemedicine.ai.entity;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Data;
+
+@Entity
+@Table(name = "vital_readings")
+@Data
+public class VitalReading {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long patientId;
+    private int heartRate;
+    private int spo2;
+    private int systolicBP;
+    private int diastolicBP;
+
+    private LocalDateTime timestamp;
+
+
+    // getters & setters
+    public VitalReading() {
+    }
+
+}
+

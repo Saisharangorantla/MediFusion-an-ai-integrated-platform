@@ -1,0 +1,42 @@
+package com.yourorg.telemedicine.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yourorg.telemedicine.entity.Patient;
+import com.yourorg.telemedicine.repository.PatientRepository;
+
+@Service
+public class PatientNotificationService {
+
+    @Autowired
+    private SmsService smsService;
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private PatientRepository patientRepository;
+
+    // 🔥 userId comes from alert-service
+    public void notifyPatient(Long userId, String message) {
+
+        // convert USER_ID → PATIENT
+        Patient patient = patientRepository.findByUserId(userId)
+                .orElseThrow(() ->
+                        new RuntimeException("Patient not found for userId: " + userId));
+
+     // 🔥 Fetch email from DB
+        String email = patient.getEmail();
+
+        if (email == null || email.isEmpty()) {
+            throw new RuntimeException("Patient email not found");
+        }
+
+        // 🔥 Send email
+        emailService.send(
+                email,
+                "MediFusion Health Alert",
+                message
+        );
+    }
+}

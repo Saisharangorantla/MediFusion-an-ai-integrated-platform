@@ -1,0 +1,5 @@
+package com.yourorg.telemedicine.ai.repository;
+
+public class ChatMessageRepository {
+
+}

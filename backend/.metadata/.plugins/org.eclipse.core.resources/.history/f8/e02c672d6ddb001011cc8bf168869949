@@ -1,0 +1,73 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.dto.DoctorDTO;
+import com.yourorg.telemedicine.dto.MessageDto;
+import com.yourorg.telemedicine.entity.Doctor;
+import com.yourorg.telemedicine.repository.DoctorRepository;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class DoctorServiceImpl implements Doctorservice {
+	@Autowired
+    private final DoctorRepository repo;
+	@Autowired
+	private SmsService k;
+	@Autowired
+	private KafkaTemplate<String, String> template;
+    public DoctorServiceImpl(DoctorRepository repo) { this.repo = repo; }
+
+    public Doctor create(DoctorDTO dto) {
+        Doctor d = new Doctor();
+        BeanUtils.copyProperties(dto, d);
+        Doctor do= repo.save(d);
+        MessageDto msgDto=new MessageDto();
+        msgDto.setId(do.getId());
+		msgDto.setName(dto.getName());
+		msgDto.setEmail(dto.getEmail());
+		msgDto.setSpecialization(dto.getSpecialization());
+		msgDto.setExperienceYears(dto.getExperienceYears());
+		msgDto.setMsg("doctor added Successfully");
+		return do;
+    }
+
+    public DoctorDTO getById(Long id) {
+        Doctor d = repo.findById(id).orElseThrow();
+        var dto = new DoctorDTO();
+        dto.setId(d.getId()); dto.setName(d.getName()); dto.setSpecialization(d.getSpecialization());
+        dto.setContact(d.getContact()); dto.setEmail(d.getEmail()); dto.setRating(d.getRating());
+        return dto;
+    }
+
+    public List<DoctorDTO> listAll() {
+        return repo.findAll().stream().map(d -> {
+            var dto = new DoctorDTO();
+            dto.setId(d.getId()); dto.setName(d.getName()); dto.setSpecialization(d.getSpecialization());
+            dto.setContact(d.getContact()); dto.setEmail(d.getEmail()); dto.setRating(d.getRating());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+    public void notifyDoctor(Long doctorid,Long patientId, String message) {
+    	
+    	 Doctor doctor = repo.findById(doctorid)
+                 .orElseThrow(() ->
+                         new RuntimeException("Doctor not found with id " + doctorid));
+
+        
+        String doctorPhone = doctor.getContact();
+
+        String smsMessage =
+        		 "🚨 HEALTH ALERT 🚨\n"
+        	              + "Doctor: " + doctor.getName() + "\n"
+        	              + "Patient ID: " + patientId + "\n"
+        	              + message;
+
+        k.sendSms(doctorPhone, smsMessage);
+    }
+}

@@ -1,0 +1,14 @@
+package com.yourorg.telemedicine.ai.model;
+
+public class AIDiagnosisRequest {
+    private Integer age;
+    private String symptoms;
+    private String vitals;
+
+    public Integer getAge() { return age; }
+    public void setAge(Integer age) { this.age = age; }
+    public String getSymptoms() { return symptoms; }
+    public void setSymptoms(String symptoms) { this.symptoms = symptoms; }
+    public String getVitals() { return vitals; }
+    public void setVitals(String vitals) { this.vitals = vitals; }
+}

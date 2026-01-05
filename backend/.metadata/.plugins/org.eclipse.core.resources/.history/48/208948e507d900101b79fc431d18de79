@@ -1,0 +1,20 @@
+package com.yourorg.telemedicine.ai.client;
+
+
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.List;
+
+@FeignClient(
+    name = "wearable-service",   // Eureka service name
+    path = "/api/wearables"
+)
+public interface WearableClient {
+
+    @GetMapping("/vitals/{patientId}")
+    List<VitalReadingDto> getVitals(@PathVariable("patientId") Long patientId);
+}
+

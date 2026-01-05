@@ -1,0 +1,35 @@
+package com.yourorg.telemedicine.ai.api;
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.yourorg.telemedicine.ai.dto.ChatRequestDto;
+import com.yourorg.telemedicine.ai.service.AIChatService;
+
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+
+@RestController
+@RequestMapping("/ai")
+@RequiredArgsConstructor
+public class AIChatController
+{
+
+
+	private final AIChatService chatService;
+
+
+//	@PostMapping("/chat")
+//	public Mono<String> chat(@RequestBody ChatRequestDto dto) {
+//		return chatService.chat(dto);
+//}
+
+    @PostMapping("/send")
+    public String chat(@RequestParam Long patientId,
+                       @RequestParam String message) {
+        return chatService.processChat(patientId, message);
+    }
+}

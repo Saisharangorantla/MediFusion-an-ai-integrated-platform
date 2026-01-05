@@ -1,0 +1,100 @@
+package com.yourorg.telemedicine.controller;
+
+import com.yourorg.telemedicine.dto.PatientCreateRequest;
+import com.yourorg.telemedicine.dto.PatientDTO;
+import com.yourorg.telemedicine.service.PatientNotificationService;
+import com.yourorg.telemedicine.service.PatientService;
+
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/patients")
+public class PatientController {
+	@Autowired
+    private  PatientService service;
+    @Autowired
+    private PatientNotificationService pns;
+
+//
+//    @PostMapping("/patient/create")
+//    public ResponseEntity<Patient> create(@RequestBody PatientDTO dto, @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
+//        // Extract userId from header if present
+//        Long userId = null;
+//        if (userIdHeader != null && !userIdHeader.isEmpty()) {
+//            try {
+//                userId = Long.parseLong(userIdHeader);
+//            } catch (NumberFormatException e) {
+//                // Log error but continue without userId
+//                System.err.println("Invalid X-User-Id header: " + userIdHeader);
+//            }
+//        }
+//        return ResponseEntity.ok(service.create(dto, userId));
+//    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PatientDTO> get(@PathVariable Long id) {
+        return ResponseEntity.ok(service.getById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<PatientDTO>> list() {
+        return ResponseEntity.ok(service.listAll());
+    }
+
+    @GetMapping("/by-user/{userId}")
+    public ResponseEntity<PatientDTO> getByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(service.getByUserId(userId));
+    }
+
+    @PostMapping("/notify")
+    public void notifyPatient(@RequestParam Long patientId,
+                              @RequestParam String message) {
+        pns.notifyPatient(patientId, message);
+    }
+    
+    @PostMapping("/create")
+    public ResponseEntity<?> createPatient(@Valid @RequestBody PatientCreateRequest request) {
+        System.out.println("Received patient creation request:");
+        System.out.println("  userId: " + request.getUserId());
+        System.out.println("  fullName: " + request.getFullName());
+        System.out.println("  email: " + request.getEmail());
+        System.out.println("  gender: " + request.getGender());
+        System.out.println("  contact: " + request.getContact());
+        System.out.println("  address: " + request.getAddress());
+        System.out.println("  age: " + request.getAge());
+        
+        try {
+            service.save(request);
+            System.out.println("✓ Patient profile saved successfully to database for userId: " + request.getUserId());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            System.err.println("✗ ERROR: Failed to save patient profile to database: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to save patient profile: " + e.getMessage());
+        }
+    }
+    
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return ResponseEntity.badRequest().body(errors);
+    }
+    
+
+}

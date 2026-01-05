@@ -1,0 +1,101 @@
+package com.yourorg.telemedicine.config;
+
+import io.jsonwebtoken.Claims;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+
+@Component
+public class JwtAuthenticationFilter implements GlobalFilter {
+
+    private final JwtUtil jwtUtil;
+
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/auth/login",
+            "/auth/register",          // covers /auth/register/*
+            "/wearable/fitbit",
+            "/wearable/apple",
+            "/actuator/health",
+            "/actuator/info"
+    );
+
+    @Autowired
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
+        String path = exchange.getRequest().getURI().getPath();
+        System.out.println("GATEWAY PATH = " + path);
+
+        String method = exchange.getRequest().getMethod().name();
+
+        // ✅ ALLOW OPTIONS (CORS preflight)
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            return chain.filter(exchange);
+        }
+
+        // ✅ ALLOW PUBLIC PATHS
+        if (isPublicPath(path)) {
+            System.out.println("Gateway JWT: Public path allowed → " + path);
+            return chain.filter(exchange);
+        }
+
+        // 🔒 PROTECTED PATHS
+        String authHeader = exchange.getRequest()
+                .getHeaders()
+                .getFirst(HttpHeaders.AUTHORIZATION);
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        String token = authHeader.substring(7);
+
+        if (!jwtUtil.validateToken(token)) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        Claims claims = jwtUtil.getAllClaimsFromToken(token);
+
+        ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate()
+                .header("X-User-Name", claims.getSubject())
+                .header("X-User-Role", String.valueOf(claims.get("role")));
+
+        Object userId = claims.get("userId");
+        if (userId != null) {
+            requestBuilder.header("X-User-Id", String.valueOf(userId));
+        }
+
+        return chain.filter(
+                exchange.mutate().request(requestBuilder.build()).build()
+        );
+    }
+    private boolean isPublicPath(String path) {
+        return path.contains("/auth/login")
+            || path.contains("/auth/register")
+            || path.contains("/actuator");
+    }
+
+
+    @Override
+    public int getOrder() {
+        return -50;
+    }
+}
+
+
+

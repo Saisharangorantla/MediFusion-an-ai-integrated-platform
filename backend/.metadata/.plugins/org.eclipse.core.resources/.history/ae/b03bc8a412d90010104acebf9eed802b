@@ -1,0 +1,17 @@
+package com.yourorg.telemedicine.alert.dto;
+
+import java.time.LocalDateTime;
+
+import com.yourorg.telemedicine.dto.AppointmentDTO;
+
+import lombok.Data;
+
+@Data
+public class AppointmentDTO {
+    private Long id;
+    private Long patientId;
+    private Long doctorId;
+    private LocalDateTime appointmentTime;
+    private String status;
+    private String notes;
+}

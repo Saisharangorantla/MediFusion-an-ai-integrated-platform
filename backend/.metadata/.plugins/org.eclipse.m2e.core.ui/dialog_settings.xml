@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="MavenProjectImportWizardPage">
+		<list key="rootDirectory">
+			<item value="D:\major project code\Auth-service"/>
+			<item value="D:\Auth-service"/>
+			<item value="D:\major project code\alert-service"/>
+			<item value="D:\major project code\wearable-service"/>
+			<item value="D:\major project code\patient-service"/>
+			<item value="D:\major project code\health-record-service"/>
+			<item value="D:\major project code\doctor-service"/>
+			<item value="D:\major project code\auth-service"/>
+			<item value="D:\major project code\appointment-service"/>
+			<item value="D:\major project code\api-gateway"/>
+			<item value="D:\major project code\ai-service"/>
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+	</section>
+	<section name="org.eclipse.m2e.core.pom.overview">
+	</section>
+	<section name="org.eclipse.m2e.core.pom.dependencies">
+	</section>
+</section>

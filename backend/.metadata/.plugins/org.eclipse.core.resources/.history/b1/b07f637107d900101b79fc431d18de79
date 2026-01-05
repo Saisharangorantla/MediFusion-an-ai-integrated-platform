@@ -1,0 +1,15 @@
+package com.yourorg.telemedicine.repository;
+
+import com.yourorg.telemedicine.entity.DeviceReading;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface DeviceReadingRepository extends JpaRepository<DeviceReading, Long> {
+	
+	@Query("""
+		       SELECT r FROM DeviceReading r
+		       JOIN r.device d
+		       WHERE d.patientId = :patientId
+		       ORDER BY r.timestamp DESC
+		    """)
+		    List<DeviceReading> findLatestReadings(@Param("patientId") Long patientId);
+}

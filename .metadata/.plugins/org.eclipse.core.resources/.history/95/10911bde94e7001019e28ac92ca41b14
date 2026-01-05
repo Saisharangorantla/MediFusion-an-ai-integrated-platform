@@ -1,0 +1,18 @@
+package com.yourorg.telemedicine.alert.client;
+
+
+
+import com.yourorg.telemedicine.alert.dto.VitalReadingDto;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.List;
+
+@FeignClient(name = "wearable-service")
+public interface WearableClient {
+
+    @GetMapping("/wearable/vitals/recent/{patientId}")
+    List<VitalReadingDto> getRecentVitals(@PathVariable Long patientId);
+}
+

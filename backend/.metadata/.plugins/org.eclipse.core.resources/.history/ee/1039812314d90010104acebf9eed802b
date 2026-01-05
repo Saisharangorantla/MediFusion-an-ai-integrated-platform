@@ -1,0 +1,5 @@
+package com.yourorg.telemedicine.dto;
+
+public class AppointmentResponseDto {
+
+}

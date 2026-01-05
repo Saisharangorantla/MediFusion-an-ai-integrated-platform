@@ -1,0 +1,104 @@
+spring.application.name=api-gate-way
+
+# Server
+server.port=8080
+
+# Cloud Config (so gateway can share common config like jwt.secret)
+spring.config.import=optional:configserver:http://localhost:9500
+
+# Eureka client
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka
+eureka.client.register-with-eureka=true
+eureka.client.fetch-registry=true
+eureka.client.registry-fetch-interval-seconds=10
+# Eureka client configuration for better service resolution
+eureka.client.initial-instance-info-replication-interval-seconds=5
+eureka.client.instance-info-replication-interval-seconds=5
+
+# Force API Gateway to register with localhost instead of machine hostname
+# This ensures the gateway is accessible via localhost:8080 even if registered with different hostname
+eureka.instance.hostname=localhost
+eureka.instance.prefer-ip-address=false
+# If prefer-ip-address is needed, use this instead:
+# eureka.instance.prefer-ip-address=true
+# eureka.instance.ip-address=127.0.0.1
+
+# =========================
+# JWT / Security
+# =========================
+
+# Secret key used for manual JWT validation in Api Gateway (same as Auth-service)
+# If using Config Server, jwt.secret should be defined there for all services.
+jwt.secret=ThisIsAStrongAndVeryLongJWTSecretKeyForHS512AlgorithmInMediFusionAuthService2025SecureKey
+
+# Expose basic actuator endpoints (health/info)
+management.endpoints.web.exposure.include=health,info
+# Health endpoint configuration - don't fail if Eureka is down
+management.health.discovery.enabled=false
+management.health.eureka.enabled=false
+# Show health details
+management.endpoint.health.show-details=when-authorized
+management.endpoint.health.show-components=when-authorized
+
+# =========================
+# Spring Cloud Gateway Routes
+# =========================
+
+# IMPORTANT: Service names in lb:// must match EXACTLY with spring.application.name (case-sensitive)
+# Eureka displays services in uppercase, but routing uses the actual service name (lowercase)
+
+# Auth Service (login / register)
+spring.cloud.gateway.routes[0].id=Auth-service
+spring.cloud.gateway.routes[0].uri=lb://auth-service
+spring.cloud.gateway.routes[0].predicates[0]=Path=/auth/**
+
+# Patient Service
+spring.cloud.gateway.routes[1].id=patient-service
+spring.cloud.gateway.routes[1].uri=lb://patient-service
+spring.cloud.gateway.routes[1].predicates[0]=Path=/patients/**
+
+# Doctor Service
+spring.cloud.gateway.routes[2].id=doctor-service
+spring.cloud.gateway.routes[2].uri=lb://doctor-service
+spring.cloud.gateway.routes[2].predicates[0]=Path=/doctors/**
+
+# Global HTTP Client Timeouts (for all routes)
+# Increase timeouts to prevent premature timeouts when services are slow to respond
+spring.cloud.gateway.httpclient.connect-timeout=10000
+spring.cloud.gateway.httpclient.response-timeout=60000
+
+# Load Balancer Configuration
+# Ensure the gateway can properly resolve services from Eureka
+spring.cloud.loadbalancer.retry.enabled=true
+spring.cloud.loadbalancer.cache.enabled=true
+spring.cloud.loadbalancer.cache.ttl=35s
+
+# Health Record Service
+spring.cloud.gateway.routes[3].id=health-record-service
+spring.cloud.gateway.routes[3].uri=lb://health-record-service
+spring.cloud.gateway.routes[3].predicates[0]=Path=/records/**
+
+# Appointment Service
+spring.cloud.gateway.routes[4].id=appointment-service
+spring.cloud.gateway.routes[4].uri=lb://appointment-service
+spring.cloud.gateway.routes[4].predicates[0]=Path=/appointments/**
+
+# Wearable Service
+spring.cloud.gateway.routes[5].id=wearable-service
+spring.cloud.gateway.routes[5].uri=lb://wearable-service
+spring.cloud.gateway.routes[5].predicates[0]=Path=/wearable/**
+
+# Recommendation Service
+spring.cloud.gateway.routes[6].id=recommendation-service
+spring.cloud.gateway.routes[6].uri=lb://recommendation-service
+spring.cloud.gateway.routes[6].predicates[0]=Path=/recommendations/**
+
+# AI Service
+spring.cloud.gateway.routes[7].id=ai-service
+spring.cloud.gateway.routes[7].uri=lb://ai-service-1
+spring.cloud.gateway.routes[7].predicates[0]=Path=/ai/**
+
+# Alert Service
+spring.cloud.gateway.routes[8].id=alert-service
+spring.cloud.gateway.routes[8].uri=lb://alert-service
+spring.cloud.gateway.routes[8].predicates[0]=Path=/alerts/**

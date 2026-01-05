@@ -1,0 +1,23 @@
+package com.yourorg.telemedicine.service;
+
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+@Service
+public class VitalSchedulerService {
+
+    private final VitalSimulatorService simulator;
+
+    public VitalSchedulerService(VitalSimulatorService simulator) {
+        this.simulator = simulator;
+    }
+
+    // Generates vitals every 10 seconds
+    @Scheduled(fixedRate = 10000)
+    public void generateVitalsForPatient() {
+        simulator.generateVitals(1L); // patientId
+    }
+}
+
+t

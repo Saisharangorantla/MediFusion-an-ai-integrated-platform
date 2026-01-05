@@ -1,0 +1,74 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.client.DoctorClient;
+import com.yourorg.telemedicine.client.PatientClient;
+import com.yourorg.telemedicine.dto.AppointmentDTO;
+import com.yourorg.telemedicine.dto.DoctorDto;
+import com.yourorg.telemedicine.dto.PatientDto;
+import com.yourorg.telemedicine.entity.Appointment;
+import com.yourorg.telemedicine.repository.AppointmentRepository;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class AppointmentService {
+	@Autowired
+    private  AppointmentRepository repo;
+	@Autowired
+    private PatientClient patientClient;
+	@Autowired
+    private  DoctorClient doctorClient;
+
+    public AppointmentService(AppointmentRepository repo,
+                              PatientClient patientClient,
+                              DoctorClient doctorClient) {
+        this.repo = repo;
+        this.patientClient = patientClient;
+        this.doctorClient = doctorClient;
+    }
+
+    @Transactional
+    public AppointmentDTO create(AppointmentDTO dto) throws Exception{
+        // call remote services for basic validation (can be cached)
+        PatientDto p = null;
+        DoctorDto d = null;
+        try {
+            p = patientClient.getPatient(dto.getPatientId());
+        } catch (Exception e) {
+            throw new Exception("Patient not found or patient-service unavailable");
+        }
+        try {
+            d = doctorClient.getDoctor(dto.getDoctorId());
+        } catch (Exception e) {
+            throw new Exception("Doctor not found or doctor-service unavailable");
+        }
+
+        // create appointment with IDs only
+        Appointment a = new Appointment();
+        a.setPatientId(dto.getPatientId());
+        a.setDoctorId(dto.getDoctorId());
+        a.setAppointmentTime(dto.getAppointmentTime());
+        a.setStatus("SCHEDULED");
+        a.setNotes(dto.getNotes());
+
+        var saved = repo.save(a);
+        dto.setId(saved.getId());
+        return dto;
+    }
+    public boolean hasActiveAppointment(Long patientId) {
+
+        Optional<Appointment> appointment =
+                repo.findFirstByPatientIdAndStatus(
+                        patientId, "BOOKED");
+
+        // Active = appointment exists AND time is not over
+        return appointment.isPresent()
+                && appointment.get().getAppointmentTime()
+                   .isAfter(LocalDateTime.now());
+    }
+}

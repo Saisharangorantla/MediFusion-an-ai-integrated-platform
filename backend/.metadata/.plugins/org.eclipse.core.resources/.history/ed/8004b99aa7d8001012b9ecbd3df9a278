@@ -1,0 +1,13 @@
+package com.yourorg.telemedicine;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class AppointmentService1Application {
+
+	public static void main(String[] args) {
+		SpringApplication.run(AppointmentService1Application.class, args);
+	}
+
+}

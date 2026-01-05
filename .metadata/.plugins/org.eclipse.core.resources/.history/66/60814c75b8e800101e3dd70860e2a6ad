@@ -1,0 +1,72 @@
+package com.yourorg.telemedicine.ai.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yourorg.telemedicine.ai.client.WearableClient;
+import com.yourorg.telemedicine.ai.entity.ChatMessage;
+import com.yourorg.telemedicine.ai.entity.ChatRole;
+import com.yourorg.telemedicine.ai.entity.VitalReading;
+import com.yourorg.telemedicine.ai.repository.ChatMessageRepository;
+import com.yourorg.telemedicine.ai.repository.VitalReadingRepository;
+import com.yourorg.telemedicine.ai.util.PromptBuilder;
+import com.yourorg.telemedicine.ai.service.GeminiService;
+
+@Service
+public class AIChatServiceImpl implements AIChatService {
+
+    @Autowired
+    private ChatMessageRepository chatRepo;
+
+    @Autowired
+    private VitalReadingRepository vitalRepo;
+
+    @Autowired
+    private GeminiService geminiService; // ✅ Gemini, not OpenAI
+
+    @Autowired
+    private PromptBuilder promptBuilder;
+    @Autowired
+    private WearableClient wearableClient;
+
+    @Override
+    public String processChat(Long patientId, String userMessage) {
+
+        // 1️⃣ Save user message
+        chatRepo.save(
+            new ChatMessage(patientId, ChatRole.USER, userMessage, LocalDateTime.now())
+        );
+
+        // 2️⃣ Get last 10 messages (oldest → newest)
+        List<ChatMessage> history =
+            chatRepo.findTop10ByPatientIdOrderByTimestampDesc(patientId)
+                    .stream()
+                    .sorted((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()))
+                    .toList();
+
+        // 3️⃣ Get latest vitals (may be null)
+        VitalReading vitals =
+            vitalRepo.findTop1ByPatientIdOrderByTimestampDesc(patientId);
+
+        // 4️⃣ Build prompt safely
+        String prompt = promptBuilder.buildPrompt(
+                vitals,
+                history,
+                userMessage
+        );
+
+        // 5️⃣ Ask Gemini
+        String aiReply = geminiService.ask(prompt);
+
+        // 6️⃣ Save AI reply
+        chatRepo.save(
+            new ChatMessage(patientId, ChatRole.AI, aiReply, LocalDateTime.now())
+        );
+
+        return aiReply;
+    }
+}

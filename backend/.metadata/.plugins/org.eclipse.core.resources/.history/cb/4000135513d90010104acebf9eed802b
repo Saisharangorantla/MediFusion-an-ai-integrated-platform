@@ -1,0 +1,12 @@
+package com.yourorg.telemedicine.alert.dto;
+
+import java.time.LocalDateTime;
+
+
+import lombok.Data;
+
+@Data
+public class AppointmentResponseDTO {
+    private boolean active;
+    private Long doctorId;	
+}

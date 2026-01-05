@@ -1,0 +1,138 @@
+package com.yourorg.telemedicine.ai.util;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
+import com.yourorg.telemedicine.ai.entity.ChatMessage;
+import com.yourorg.telemedicine.ai.entity.VitalReading;
+
+@Component
+public class PromptBuilder {
+
+    public String buildPrompt(
+            VitalReading vitals,
+            List<ChatMessage> history,
+            String userMessage) {
+
+        String intent = detectIntent(userMessage);
+
+        String historyText = history.stream()
+                .limit(5)
+                .map(m -> m.getRole() + ": " + m.getMessage())
+                .collect(Collectors.joining("\n"));
+
+        // ---------- LIFESTYLE / GENERAL QUESTIONS ----------
+        if (intent.equals("LIFESTYLE") || intent.equals("GENERAL")) {
+            return """
+            You are MediFusion AI, a friendly health assistant.
+
+            RULES:
+            - Answer only the user question
+            - Do NOT analyze vitals
+            - Give practical, simple tips
+            - Use bullet points
+            - Be positive and supportive
+            - Add ONE short disclaimer line
+
+            User Question:
+            %s
+            """.formatted(userMessage);
+        }
+
+        // ---------- CONSULTATION QUESTIONS ----------
+        if (intent.equals("CONSULTATION")) {
+            return """
+            You are MediFusion AI.
+
+            Explain how the user can consult a doctor.
+            Keep it simple and helpful.
+            Do NOT analyze vitals unless asked.
+
+            User Question:
+            %s
+            """.formatted(userMessage);
+        }
+
+        // ---------- VITAL ANALYSIS QUESTIONS ----------
+        String vitalsText = (vitals == null)
+                ? "No recent vitals available."
+                : """
+                  • Heart Rate: %d bpm
+                  • SpO₂: %d %%
+                  • Blood Pressure: %d / %d mmHg
+                  """.formatted(
+                        vitals.getHeartRate(),
+                        vitals.getSpo2(),
+                        vitals.getSystolicBP(),
+                        vitals.getDiastolicBP()
+                );
+
+        return """
+        You are MediFusion AI, a healthcare assistant.
+
+        STRICT RULES:
+        - Be concise and clear
+        - Use bullet points and new lines
+        - Do NOT repeat sentences
+        - Do NOT diagnose diseases
+        - Classify vitals as Normal / Low / High
+        - Give clear next steps
+        - Add ONE disclaimer line only
+
+        RESPONSE FORMAT (follow exactly):
+
+        🩺 Health Summary:
+        (1–2 lines)
+
+        📊 Vitals:
+        (classified values)
+
+        🚨 Status:
+        (Normal / Warning / Critical)
+
+        ✅ Recommended Actions:
+        (max 3 bullets)
+
+        ℹ️ Disclaimer:
+        (single line)
+
+        Patient Vitals:
+        %s
+
+        Recent Conversation:
+        %s
+
+        User Question:
+        %s
+        """.formatted(
+                vitalsText,
+                historyText,
+                userMessage
+        );
+    }
+
+    // ---------- INTENT DETECTION ----------
+    private String detectIntent(String message) {
+        String q = message.toLowerCase();
+
+        if (q.contains("sleep") || q.contains("diet") || q.contains("food")
+                || q.contains("exercise") || q.contains("stress")) {
+            return "LIFESTYLE";
+        }
+
+        if (q.contains("doctor") || q.contains("appointment")
+                || q.contains("consult")) {
+            return "CONSULTATION";
+        }
+
+        if (q.contains("health") || q.contains("vitals")
+                || q.contains("bp") || q.contains("spo2")
+                || q.contains("heart") || q.contains("condition")) {
+            return "VITAL_ANALYSIS";
+        }
+
+        return "GENERAL";
+    }
+}

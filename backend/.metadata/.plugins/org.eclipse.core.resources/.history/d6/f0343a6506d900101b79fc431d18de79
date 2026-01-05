@@ -1,0 +1,36 @@
+package com.yourorg.telemedicine.ai.api;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+
+import com.yourorg.telemedicine.ai.OpenAIClient;
+import com.yourorg.telemedicine.ai.model.AIDiagnosisRequest;
+
+import reactor.core.publisher.Mono;
+
+@RestController
+@RequestMapping("/ai")
+public class AIController {
+	@Autowired
+    private OpenAIClient openAIClient;
+
+//    public AIController(OpenAIClient openAIClient) {
+//        this.openAIClient = openAIClient;
+//    }
+
+    @PostMapping("/diagnose")
+    public Mono<String> diagnose(@RequestBody AIDiagnosisRequest request) {
+        String prompt = buildPromptFrom(request);
+        return openAIClient.getCompletion(prompt);
+    }
+
+    private String buildPromptFrom(AIDiagnosisRequest r) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Patient age: ").append(r.getAge()).append("\n");
+        sb.append("Symptoms: ").append(r.getSymptoms()).append("\n");
+        sb.append("Vitals: ").append(r.getVitals()).append("\n");
+        sb.append("Return a concise differential diagnosis and recommended next tests.");
+        return sb.toString();
+    }
+}

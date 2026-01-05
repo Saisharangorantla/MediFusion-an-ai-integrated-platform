@@ -1,0 +1,40 @@
+package com.yourorg.telemedicine.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yourorg.telemedicine.client.AlertClient;
+import com.yourorg.telemedicine.entity.VitalData;
+import com.yourorg.telemedicine.repository.VitalRepository;
+
+import java.time.LocalDateTime;
+import java.util.Random;
+
+@Service
+public class VitalSimulatorService {
+
+    @Autowired
+    private VitalRepository repo;
+
+    @Autowired
+    private AlertClient alertClient;
+    private final Random random = new Random();
+
+    public VitalData generateVitals(Long patientId) {
+
+        VitalData v = new VitalData();
+        v.setPatientId(patientId);
+        v.setHeartRate(60 + random.nextInt(60));
+        v.setSpo2(85 + random.nextInt(15));
+        v.setSystolicBP(100 + random.nextInt(40));
+        v.setDiastolicBP(60 + random.nextInt(30));
+        v.setRecordedAt(LocalDateTime.now());
+
+        repo.save(v);
+
+        // ✅ REQUIRED return
+        return v;
+    }
+}
+
+

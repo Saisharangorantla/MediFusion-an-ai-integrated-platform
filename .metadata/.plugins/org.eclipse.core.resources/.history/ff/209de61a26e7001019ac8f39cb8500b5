@@ -1,0 +1,127 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.dto.MessageDto;
+import com.yourorg.telemedicine.dto.PatientCreateRequest;
+import com.yourorg.telemedicine.dto.PatientDTO;
+import com.yourorg.telemedicine.entity.Patient;
+import com.yourorg.telemedicine.repository.PatientRepository;
+
+
+
+import com.yourorg.telemedicine.exception.ResourceNotFoundException;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class PatientServiceImpl implements PatientService {
+	@Autowired
+    private  PatientRepository repo;
+//	@Autowired
+//	private KafkaTemplate<String, String> template;
+	
+
+
+
+
+    // public Patient create(PatientDTO dto) {
+    //     return create(dto, null);
+    // }
+    
+//    public Patient create(PatientDTO dto, Long userId) {
+//        Patient p = new Patient();
+//        BeanUtils.copyProperties(dto, p);
+//        // Set userId if provided (from JWT token)
+//        if (userId != null) {
+//            p.setUserId(userId);
+//        }
+//        Patient savedPatient = repo.save(p);
+//        MessageDto msgDto=new MessageDto();
+//        msgDto.setId(savedPatient.getId());
+//		msgDto.setName(dto.getName());
+//		msgDto.setEmail(dto.getEmail());
+//		msgDto.setContact(dto.getContact());
+//		msgDto.setMsg("patient added Successfully");
+//		return savedPatient;
+//    }
+
+    public PatientDTO getById(Long id) {
+        var p = repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
+        var dto = new PatientDTO();
+        dto.setId(p.getId()); 
+        dto.setFullname(p.getFullname()); 
+        dto.setGender(p.getGender());
+        dto.setContact(p.getContact()); 
+        dto.setEmail(p.getEmail()); 
+        dto.setAddress(p.getAddress());
+        dto.setAge(p.getAge());
+        dto.setUserId(p.getUserId());
+        return dto;
+    }
+
+    public List<PatientDTO> listAll() {
+        return repo.findAll().stream().map(p -> {
+            var dto = new PatientDTO();
+            dto.setId(p.getId()); 
+            dto.setFullname(p.getFullname()); 
+            dto.setGender(p.getGender());
+            dto.setContact(p.getContact()); 
+            dto.setEmail(p.getEmail()); 
+            dto.setAddress(p.getAddress());
+            dto.setAge(p.getAge());
+            dto.setUserId(p.getUserId());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+	@Override
+	public PatientDTO getByUserId(Long userId) {
+		var p = repo.findByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("Patient not found for user ID: " + userId));
+		var dto = new PatientDTO();
+		dto.setId(p.getId()); 
+		dto.setFullname(p.getFullname()); 
+		dto.setGender(p.getGender());
+		dto.setContact(p.getContact()); 
+		dto.setEmail(p.getEmail()); 
+		dto.setAddress(p.getAddress());
+		dto.setAge(p.getAge());
+		dto.setUserId(p.getUserId());
+		return dto;
+	}
+	
+	public void save(PatientCreateRequest request) {
+		// Check if patient already exists for this userId
+		Optional<Patient> existingPatient = repo.findByUserId(request.getUserId());
+		
+		Patient patient;
+		if (existingPatient.isPresent()) {
+			// Update existing patient
+			patient = existingPatient.get();
+			System.out.println("Updating existing patient profile for userId: " + request.getUserId());
+		} else {
+			// Create new patient
+			patient = new Patient();
+			System.out.println("Creating new patient profile for userId: " + request.getUserId());
+		}
+		
+		patient.setUserId(request.getUserId());
+		patient.setFullname(request.getFullName());
+		patient.setGender(request.getGender());
+		patient.setContact(request.getContact());
+		patient.setEmail(request.getEmail());
+		patient.setAddress(request.getAddress());
+		patient.setAge(request.getAge());
+
+		repo.save(patient);
+	}
+
+
+
+}

@@ -1,0 +1,5 @@
+package com.yourorg.telemedicine.entity;
+
+public class PatientRegisterRequest {
+
+}

@@ -1,0 +1,141 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.client.DoctorClient;
+import com.yourorg.telemedicine.client.PatientClient;
+import com.yourorg.telemedicine.dto.AppointmentDTO;
+import com.yourorg.telemedicine.dto.AppointmentResponseDto;
+import com.yourorg.telemedicine.dto.DoctorDto;
+import com.yourorg.telemedicine.dto.MessageDto;
+import com.yourorg.telemedicine.dto.PatientDto;
+import com.yourorg.telemedicine.entity.Appointment;
+import com.yourorg.telemedicine.repository.AppointmentRepository;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class AppointmentServiceImpl implements AppointmentService {
+	@Autowired
+    private  AppointmentRepository repo;
+	@Autowired
+    private PatientClient patientClient;
+	@Autowired
+    private  DoctorClient doctorClient;
+	@Autowired
+	private KafkaTemplate<String, String> template;
+//	@Value("${appointment.window-days}")
+//	private int windowDays;
+
+
+//    public AppointmentService(AppointmentRepository repo,
+//                              PatientClient patientClient,
+//                              DoctorClient doctorClient) {
+//        this.repo = repo;
+//        this.patientClient = patientClient;
+//        this.doctorClient = doctorClient;
+//    }
+    private static final int WINDOW_DAYS = 30;
+
+    @Transactional
+    public AppointmentDTO create(AppointmentDTO dto) throws Exception{
+        // call remote services for basic validation (can be cached)
+        PatientDto p = null;
+        DoctorDto d = null;
+        try {
+            p = patientClient.getPatient(dto.getPatientId());
+        } catch (Exception e) {
+            throw new Exception("Patient not found or patient-service unavailable");
+        }
+        try {
+            d = doctorClient.getDoctor(dto.getDoctorId());
+        } catch (Exception e) {
+            throw new Exception("Doctor not found or doctor-service unavailable");
+        }
+
+        // create appointment with IDs only
+        Appointment a = new Appointment();
+        a.setPatientId(dto.getPatientId());
+        a.setDoctorId(dto.getDoctorId());
+        a.setAppointmentTime(dto.getAppointmentTime());
+        a.setStatus("SCHEDULED");
+        a.setNotes(dto.getNotes());
+
+        var saved = repo.save(a);
+        dto.setId(saved.getId());
+        MessageDto msgDto=new MessageDto();
+        msgDto.setId(dto.getId());
+        msgDto.setPatientId(dto.getPatientId());
+        msgDto.setDoctorId(dto.getDoctorId());
+        msgDto.setAppointmentTime(dto.getAppointmentTime());
+        return dto;
+    }
+
+//    public boolean hasActiveAppointment(Long patientId) {
+//
+//        Optional<Appointment> appointment =
+//                repo.findFirstByPatientIdAndStatus(
+//                        patientId, "BOOKED");
+//
+//        if (appointment.isEmpty()) {
+//            return false;
+//        }
+//
+//        LocalDateTime appointmentTime = appointment.get().getAppointmentTime();
+//        LocalDateTime now = LocalDateTime.now();
+//
+//        // Active if within ±30 minutes window
+//        return now.isAfter(appointmentTime.minusMinutes(WINDOW_DAYS))
+//                && now.isBefore(appointmentTime.plusMinutes(WINDOW_DAYS));
+//    }
+//    public Long getDoctorIdForActiveAppointment(Long patientId) {
+//
+//        Optional<Appointment> appointment =
+//                repo.findFirstByPatientIdAndStatus(
+//                        patientId, "BOOKED");
+//
+//        if (appointment.isEmpty()) {
+//            return null;
+//        }
+//
+//        LocalDateTime appointmentTime = appointment.get().getAppointmentTime();
+//        LocalDateTime now = LocalDateTime.now();
+//
+//        boolean active =
+//                now.isAfter(appointmentTime.minusDays(WINDOW_DAYS))
+//                && now.isBefore(appointmentTime.plusDays(WINDOW_DAYS));
+//
+//        return active ? appointment.get().getDoctorId() : null;
+//    }
+    public AppointmentResponseDto getActiveAppointment(Long patientId) {
+
+        AppointmentResponseDto response = new AppointmentResponseDto();
+
+        Optional<Appointment> opt =
+                repo.findFirstByPatientIdAndStatus(
+                        patientId, "SCHEDULED");
+
+        if (opt.isEmpty()) {
+            response.setActive(false);
+            return response;
+        }
+
+        Appointment appt = opt.get();
+        LocalDateTime now = LocalDateTime.now();
+
+        boolean active =
+                now.isAfter(appt.getAppointmentTime().minusDays(WINDOW_DAYS)) &&
+                now.isBefore(appt.getAppointmentTime().plusDays(WINDOW_DAYS));
+
+        response.setActive(active);
+        response.setDoctorId(active ? appt.getDoctorId() : null);
+
+        return response;
+    }
+
+}

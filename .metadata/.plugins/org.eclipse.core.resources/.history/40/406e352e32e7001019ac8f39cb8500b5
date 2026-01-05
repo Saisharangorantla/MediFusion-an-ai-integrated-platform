@@ -1,0 +1,214 @@
+package com.yourorg.telemedicine.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.yourorg.telemedicine.client.DoctorClient;
+import com.yourorg.telemedicine.client.PatientClient;
+import com.yourorg.telemedicine.dto.AppointmentDTO;
+import com.yourorg.telemedicine.dto.AppointmentResponseDto;
+import com.yourorg.telemedicine.dto.DoctorDto;
+import com.yourorg.telemedicine.dto.MessageDto;
+import com.yourorg.telemedicine.dto.PatientDto;
+import com.yourorg.telemedicine.entity.Appointment;
+import com.yourorg.telemedicine.repository.AppointmentRepository;
+
+@Service
+public class AppointmentServiceImpl implements AppointmentService {
+	@Autowired
+    private  AppointmentRepository repo;
+	@Autowired
+    private PatientClient patientClient;
+	@Autowired
+    private  DoctorClient doctorClient;
+//	@Autowired
+//	private KafkaTemplate<String, String> template;
+//	@Value("${appointment.window-days}")
+//	private int windowDays;
+
+
+
+    private static final int WINDOW_DAYS = 30;
+
+    @Transactional
+    public AppointmentDTO create(AppointmentDTO dto) throws Exception{
+        // call remote services for basic validation (can be cached)
+        PatientDto p = null;
+        DoctorDto d = null;
+        try {
+            p = patientClient.getPatient(dto.getPatientId());
+        } catch (Exception e) {
+            throw new Exception("Patient not found or patient-service unavailable");
+        }
+        try {
+            d = doctorClient.getDoctor(dto.getDoctorId());
+        } catch (Exception e) {
+            throw new Exception("Doctor not found or doctor-service unavailable");
+        }
+
+        // create appointment with IDs only
+        Appointment a = new Appointment();
+        a.setPatientId(dto.getPatientId());
+        a.setDoctorId(dto.getDoctorId());
+        a.setAppointmentTime(dto.getAppointmentTime());
+        a.setStatus("SCHEDULED");
+        a.setNotes(dto.getNotes());
+        a.setCreatedAt(LocalDateTime.now());
+
+        var saved = repo.save(a);
+        dto.setId(saved.getId());
+        dto.setCreatedAt(saved.getCreatedAt());
+        
+        // Populate doctor and patient names in response
+        if (d != null) {
+            dto.setDoctorName(d.getName());
+            dto.setSpecialty(d.getSpecialization());
+        }
+        if (p != null) {
+            dto.setPatientName(p.getName());
+        }
+        
+        MessageDto msgDto=new MessageDto();
+        msgDto.setId(dto.getId());
+        msgDto.setPatientId(dto.getPatientId());
+        msgDto.setDoctorId(dto.getDoctorId());
+        msgDto.setAppointmentTime(dto.getAppointmentTime());
+        msgDto.setMsg("appointment have made");
+        return dto;
+    }
+
+//    public boolean hasActiveAppointment(Long patientId) {
+//
+//        Optional<Appointment> appointment =
+//                repo.findFirstByPatientIdAndStatus(
+//                        patientId, "BOOKED");
+//
+//        if (appointment.isEmpty()) {
+//            return false;
+//        }
+//
+//        LocalDateTime appointmentTime = appointment.get().getAppointmentTime();
+//        LocalDateTime now = LocalDateTime.now();
+//
+//        // Active if within ±30 minutes window
+//        return now.isAfter(appointmentTime.minusMinutes(WINDOW_DAYS))
+//                && now.isBefore(appointmentTime.plusMinutes(WINDOW_DAYS));
+//    }
+//    public Long getDoctorIdForActiveAppointment(Long patientId) {
+//
+//        Optional<Appointment> appointment =
+//                repo.findFirstByPatientIdAndStatus(
+//                        patientId, "BOOKED");
+//
+//        if (appointment.isEmpty()) {
+//            return null;
+//        }
+//
+//        LocalDateTime appointmentTime = appointment.get().getAppointmentTime();
+//        LocalDateTime now = LocalDateTime.now();
+//
+//        boolean active =
+//                now.isAfter(appointmentTime.minusDays(WINDOW_DAYS))
+//                && now.isBefore(appointmentTime.plusDays(WINDOW_DAYS));
+//
+//        return active ? appointment.get().getDoctorId() : null;
+//    }
+    public AppointmentResponseDto getActiveAppointment(Long patientId) {
+
+        AppointmentResponseDto response = new AppointmentResponseDto();
+
+        Optional<Appointment> opt =
+                repo.findFirstByPatientIdAndStatus(
+                        patientId, "SCHEDULED");
+
+        if (opt.isEmpty()) {
+            response.setActive(false);
+            return response;
+        }
+
+        Appointment appt = opt.get();
+        LocalDateTime now = LocalDateTime.now();
+
+        boolean active =
+                now.isAfter(appt.getAppointmentTime().minusDays(WINDOW_DAYS)) &&
+                now.isBefore(appt.getAppointmentTime().plusDays(WINDOW_DAYS));
+
+        response.setActive(active);
+        response.setDoctorId(active ? appt.getDoctorId() : null);
+
+        return response;
+    }
+
+    @Override
+    public List<AppointmentDTO> getAppointmentsByPatientId(Long patientId) {
+        List<Appointment> appointments = repo.findByPatientIdOrderByAppointmentTimeDesc(patientId);
+        return appointments.stream().map(appointment -> convertToDTO(appointment, true)).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AppointmentDTO> getAppointmentsByDoctorId(Long doctorId) {
+        List<Appointment> appointments = repo.findByDoctorIdOrderByAppointmentTimeDesc(doctorId);
+        return appointments.stream().map(appointment -> convertToDTO(appointment, false)).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDTO updateStatus(Long appointmentId, String status) {
+        Optional<Appointment> opt = repo.findById(appointmentId);
+        if (opt.isEmpty()) {
+            throw new RuntimeException("Appointment not found with id: " + appointmentId);
+        }
+        Appointment appointment = opt.get();
+        appointment.setStatus(status);
+        Appointment updated = repo.save(appointment);
+        // Fetch both doctor and patient info for update response
+        return convertToDTO(updated, true);
+    }
+
+    private AppointmentDTO convertToDTO(Appointment appointment, boolean fetchDoctorInfo) {
+        AppointmentDTO dto = new AppointmentDTO();
+        dto.setId(appointment.getId());
+        dto.setPatientId(appointment.getPatientId());
+        dto.setDoctorId(appointment.getDoctorId());
+        dto.setAppointmentTime(appointment.getAppointmentTime());
+        dto.setStatus(appointment.getStatus());
+        dto.setNotes(appointment.getNotes());
+        dto.setCreatedAt(appointment.getCreatedAt());
+        
+        // Always fetch doctor information (needed for both patient and doctor views)
+        if (appointment.getDoctorId() != null) {
+            try {
+                DoctorDto doctor = doctorClient.getDoctor(appointment.getDoctorId());
+                if (doctor != null) {
+                    dto.setDoctorName(doctor.getName());
+                    dto.setSpecialty(doctor.getSpecialization());
+                }
+            } catch (Exception e) {
+                // Log error but don't fail the request
+                System.err.println("Error fetching doctor info for appointment " + appointment.getId() + ": " + e.getMessage());
+            }
+        }
+        
+        // Fetch patient information when viewing from doctor's perspective
+        if (!fetchDoctorInfo && appointment.getPatientId() != null) {
+            try {
+                PatientDto patient = patientClient.getPatient(appointment.getPatientId());
+                if (patient != null) {
+                    dto.setPatientName(patient.getName());
+                }
+            } catch (Exception e) {
+                // Log error but don't fail the request
+                System.out.println("Error fetching patient info for appointment " + appointment.getId() + ": " + e.getMessage());
+            }
+        }
+        
+        return dto;
+    }
+
+}

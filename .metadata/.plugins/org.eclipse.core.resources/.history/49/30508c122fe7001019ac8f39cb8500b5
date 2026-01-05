@@ -1,0 +1,17 @@
+package com.yourorg.telemedicine.service;
+
+import java.util.List;
+
+import com.yourorg.telemedicine.dto.DoctorCreateRequest;
+import com.yourorg.telemedicine.dto.DoctorDTO;
+import com.yourorg.telemedicine.entity.Doctor;
+
+public interface Doctorservice {
+	DoctorDTO create(DoctorDTO dto);
+	DoctorDTO getById(Long id);
+	List<DoctorDTO> listAll();
+	DoctorDTO getByUserId(Long userId);
+//	void notifyDoctor(Long doctorid,Long patientId, String message);
+	void save(DoctorCreateRequest request);
+
+}

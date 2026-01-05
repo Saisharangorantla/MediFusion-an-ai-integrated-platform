@@ -1,0 +1,23 @@
+package com.yourorg.telemedicine.ai.util;
+
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import com.yourorg.telemedicine.ai.entity.AIChatMessageEntity;
+
+@Component
+public class PromptBuilder {
+
+
+public String build(List<AIChatMessageEntity> history, String newMessage) 
+{
+	StringBuilder sb = new StringBuilder();
+	for (AIChatMessageEntity m : history) {
+			sb.append(m.getRole()).append(": ")
+			.append(m.getMessage()).append("\n");
+		}
+	sb.append("USER: ").append(newMessage);
+	return sb.toString();
+}
+}

@@ -1,0 +1,310 @@
+package com.yourorg.telemedicine.service;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.yourorg.authservice.client.DoctorClient;
+import com.yourorg.authservice.client.PatientClient;
+import com.yourorg.telemedicine.dto.DoctorCreateRequest;
+import com.yourorg.telemedicine.dto.DoctorRegisterRequest;
+import com.yourorg.telemedicine.dto.PatientCreateRequest;
+import com.yourorg.telemedicine.dto.PatientRegisterRequest;
+import com.yourorg.telemedicine.entity.User;
+import com.yourorg.telemedicine.repo.UserRepository;
+import feign.FeignException;
+
+@Service
+public class JwtUserDetailsService implements UserDetailsService {
+	@Autowired
+	private UserRepository userDao;
+	@Autowired
+	private PasswordEncoder bcryptEncoder;
+	@Autowired
+	private PatientClient patientClient;
+	@Autowired
+	private DoctorClient doctorClient;
+
+	private String roles;
+	@Override
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		System.out.println("---load by  uname ");
+		List<SimpleGrantedAuthority> roles = null;
+		User user = userDao.findByUsername(username);
+		if (user == null) {
+			throw new UsernameNotFoundException("User not found with username: " + username);
+		}
+		roles = Arrays.asList(new SimpleGrantedAuthority(user.getRole()));
+		System.out.println("Roles : "+roles);
+		setRoles(roles.toString());
+		return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
+				roles);
+	}
+	public String getRoles() {
+		return roles;
+	}
+	public void setRoles(String roles) {
+		this.roles = roles;
+	}
+//	public User save(UserDto user) {
+//		System.out.println("JwtUserDetailsService.save() - Received UserDto:");
+//		System.out.println("  Username: " + user.getUsername());
+//		System.out.println("  Email: " + user.getEmail());
+//		System.out.println("  FullName: " + user.getFullName());
+//		System.out.println("  Role: " + user.getRole());
+//		
+//		// Validate email is not null or empty
+//		if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+//			throw new RuntimeException("Email cannot be null or empty");
+//		}
+//		
+//		// Check if username already exists
+//		if (userDao.existsByUsername(user.getUsername())) {
+//			throw new RuntimeException("Username already exists: " + user.getUsername());
+//		}
+//		
+//		// Check if email already exists
+//		if (userDao.existsByEmail(user.getEmail())) {
+//			throw new RuntimeException("Email already exists: " + user.getEmail());
+//		}
+//		
+//		User newUser = new User();
+//		newUser.setUsername(user.getUsername());
+//		newUser.setEmail(user.getEmail());
+//		newUser.setFullName(user.getFullName());
+//		newUser.setPassword(bcryptEncoder.encode(user.getPassword()));
+//		newUser.setRole(user.getRole());
+//
+//		
+//		User savedUser = userDao.save(newUser);
+//
+//		
+//		// Automatically create patient profile if role is PATIENT or USER
+//		if ("PATIENT".equalsIgnoreCase(user.getRole())) {
+//
+//            PatientCreateRequest patientReq = new PatientCreateRequest();
+//            patientReq.setUserId(savedUser.getId());
+//            patientReq.setName(user.getFullName());
+//            patientReq.setGender(user.getGender());
+//            patientReq.setContact(user.getContact());
+//            patientReq.setEmail(user.getEmail());
+//
+//            patientClient.createPatient(patientReq);
+//        }
+//		
+//		return savedUser;
+//	}
+//	
+	public User registerPatient(PatientRegisterRequest req) {
+
+	    validateCommon(req.getUsername(), req.getEmail());
+	    
+	    // Validate required patient fields
+	    if (req.getGender() == null || req.getGender().trim().isEmpty()) {
+	        throw new IllegalArgumentException("gender is required");
+	    }
+	    if (req.getContact() == null || req.getContact().trim().isEmpty()) {
+	        throw new IllegalArgumentException("contact is required");
+	    }
+	    if (req.getAddress() == null || req.getAddress().trim().isEmpty()) {
+	        throw new IllegalArgumentException("address is required");
+	    }
+	    if (req.getFullName() == null || req.getFullName().trim().isEmpty()) {
+	        throw new IllegalArgumentException("fullName is required");
+	    }
+
+	    // Validate and create User entity
+	    User user = new User();
+	    
+	    // Validate and set username
+	    if (req.getUsername() == null || req.getUsername().trim().isEmpty()) {
+	        throw new IllegalArgumentException("username is required");
+	    }
+	    user.setUsername(req.getUsername().trim());
+	    
+	    // Validate and set email
+	    if (req.getEmail() == null || req.getEmail().trim().isEmpty()) {
+	        throw new IllegalArgumentException("email is required");
+	    }
+	    user.setEmail(req.getEmail().trim());
+	    
+	    // Validate and set fullName
+	    if (req.getFullName() == null || req.getFullName().trim().isEmpty()) {
+	        throw new IllegalArgumentException("fullName is required");
+	    }
+	    user.setFullName(req.getFullName().trim());
+	    
+	    // Validate and set password
+	    if (req.getPassword() == null || req.getPassword().trim().isEmpty()) {
+	        throw new IllegalArgumentException("password is required");
+	    }
+	    if (req.getPassword().length() < 6) {
+	        throw new IllegalArgumentException("password must be at least 6 characters");
+	    }
+	    user.setPassword(bcryptEncoder.encode(req.getPassword()));
+	    
+	    // Validate and set gender
+	    if (req.getGender() == null || req.getGender().trim().isEmpty()) {
+	        throw new IllegalArgumentException("gender is required");
+	    }
+	    user.setGender(req.getGender().trim());
+	    
+	    // Validate and set contact
+	    if (req.getContact() == null || req.getContact().trim().isEmpty()) {
+	        throw new IllegalArgumentException("contact is required");
+	    }
+	    user.setContact(req.getContact().trim());
+	    
+	    // Set role
+	    user.setRole("PATIENT");
+
+	    // Save user to database
+	    User savedUser = userDao.save(user);
+	    System.out.println("✓ User saved to database with ID: " + savedUser.getId());
+	    System.out.println("  Saved user data - Username: " + savedUser.getUsername() + 
+	                       ", Email: " + savedUser.getEmail() + 
+	                       ", FullName: " + savedUser.getFullName() + 
+	                       ", Gender: " + savedUser.getGender() + 
+	                       ", Contact: " + savedUser.getContact() + 
+	                       ", Role: " + savedUser.getRole());
+
+	    PatientCreateRequest patientReq = new PatientCreateRequest();
+	    patientReq.setUserId(savedUser.getId());
+	    patientReq.setFullName(req.getFullName().trim());
+	    patientReq.setGender(req.getGender().trim());
+	    patientReq.setContact(req.getContact().trim());
+	    patientReq.setEmail(req.getEmail().trim());
+	    patientReq.setAddress(req.getAddress().trim());
+	    patientReq.setAge(req.getAge());
+
+	    System.out.println("Calling Patient Service to create profile for userId: " + savedUser.getId());
+	    System.out.println("Patient data: fullName=" + patientReq.getFullName() + 
+	                       ", email=" + patientReq.getEmail() + 
+	                       ", gender=" + patientReq.getGender() + 
+	                       ", contact=" + patientReq.getContact() + 
+	                       ", address=" + patientReq.getAddress() + 
+	                       ", age=" + patientReq.getAge());
+
+	    try {
+	        patientClient.createPatient(patientReq);
+	        System.out.println("✓ Patient profile created successfully for userId: " + savedUser.getId());
+	    } catch (Exception e) {
+	        // Log the error with full details
+	        System.err.println("✗ ERROR: Failed to create patient profile during registration for userId: " + savedUser.getId());
+	        System.err.println("Error type: " + e.getClass().getName());
+	        System.err.println("Error message: " + e.getMessage());
+	        if (e.getCause() != null) {
+	            System.err.println("Caused by: " + e.getCause().getMessage());
+	        }
+	        e.printStackTrace();
+	        // Re-throw to fail registration so user knows something went wrong
+	        throw new RuntimeException("Patient profile creation failed: " + e.getMessage(), e);
+	    }
+
+	    return savedUser;
+	}
+
+	public User registerDoctor(DoctorRegisterRequest req) {
+
+	    validateCommon(req.getUsername(), req.getEmail());
+
+	    // =========================
+	    // 1. Validate doctor fields
+	    // =========================
+	    if (req.getFullName() == null || req.getFullName().trim().isEmpty())
+	        throw new IllegalArgumentException("fullName is required");
+
+	    if (req.getGender() == null || req.getGender().trim().isEmpty())
+	        throw new IllegalArgumentException("gender is required");
+
+	    if (req.getContact() == null || req.getContact().trim().isEmpty())
+	        throw new IllegalArgumentException("contact is required");
+
+	    if (req.getSpecialization() == null || req.getSpecialization().trim().isEmpty())
+	        throw new IllegalArgumentException("specialization is required");
+
+	    if (req.getQualification() == null || req.getQualification().trim().isEmpty())
+	        throw new IllegalArgumentException("qualification is required");
+
+	    if (req.getHospital() == null || req.getHospital().trim().isEmpty())
+	        throw new IllegalArgumentException("hospital is required");
+
+	    if (req.getConsultationFee() == null)
+	        throw new IllegalArgumentException("consultationFee is required");
+
+	    // =========================
+	    // 2. Create User
+	    // =========================
+	    User user = new User();
+	    user.setUsername(req.getUsername().trim());
+	    user.setEmail(req.getEmail().trim());
+	    user.setFullName(req.getFullName().trim());
+	    user.setPassword(bcryptEncoder.encode(req.getPassword()));
+	    user.setGender(req.getGender().trim());
+	    user.setContact(req.getContact().trim());
+	    user.setRole("DOCTOR");
+
+	    User savedUser = userDao.save(user);
+
+	    System.out.println("✓ Doctor user saved with ID: " + savedUser.getId());
+
+	    // =========================
+	    // 3. Create Doctor Profile
+	    // =========================
+	    DoctorCreateRequest doctorReq = new DoctorCreateRequest();
+	    doctorReq.setUserId(savedUser.getId());
+	    doctorReq.setFullName(req.getFullName());
+ // IMPORTANT
+	    doctorReq.setEmail(req.getEmail().trim());
+	    doctorReq.setGender(req.getGender().trim());
+	    doctorReq.setSpecialization(req.getSpecialization().trim());
+	    doctorReq.setContact(req.getContact().trim());
+	    doctorReq.setExperienceYears(req.getExperienceYears());
+	    doctorReq.setQualification(req.getQualification().trim());
+	    doctorReq.setHospital(req.getHospital().trim());
+	    doctorReq.setConsultationFee(req.getConsultationFee());
+	    doctorReq.setAddress(req.getAddress());
+
+	    try {
+	        doctorClient.createDoctor(doctorReq);
+	        System.out.println("✓ Doctor profile created for userId: " + savedUser.getId());
+	    } catch (Exception e) {
+	        System.err.println("✗ Doctor profile creation failed for userId: " + savedUser.getId());
+	        e.printStackTrace();
+	        throw new RuntimeException("Doctor profile creation failed", e);
+	    }
+
+	    return savedUser;
+	}
+
+
+	private void validateCommon(String username, String email) {
+	    if (email == null || email.isBlank()) {
+	        throw new RuntimeException("Email cannot be empty");
+	    }
+	    if (userDao.existsByUsername(username)) {
+	        throw new RuntimeException("Username already exists");
+	    }
+	    if (userDao.existsByEmail(email)) {
+	        throw new RuntimeException("Email already exists");
+	    }
+	}
+
+
+	
+	
+	public User getUserByUsername(String username) {
+		return userDao.findByUsername(username);
+	}
+//	public User getUserByEmail(String email) {
+//        return userDao.existsByEmail(email).orElse(null);
+//    }
+
+}

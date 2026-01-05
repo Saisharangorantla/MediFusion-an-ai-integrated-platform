@@ -1,0 +1,12 @@
+package com.yourorg.telemedicine.dto;
+
+
+import lombok.Data;
+
+@Data
+public class NotificationRequest {
+    private Long patientId;
+    private String message;
+    private String channel; // EMAIL | SMS | BOTH
+}
+

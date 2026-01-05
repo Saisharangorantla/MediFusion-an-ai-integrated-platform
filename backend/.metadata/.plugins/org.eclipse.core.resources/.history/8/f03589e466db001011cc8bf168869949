@@ -1,0 +1,49 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.dto.PatientDTO;
+import com.yourorg.telemedicine.entity.Patient;
+import com.yourorg.telemedicine.repository.PatientRepository;
+import com.yourorg.telemedicine.exception.ResourceNotFoundException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class PatientService {
+	@Autowired
+    private  PatientRepository repo;
+
+//    public PatientService(PatientRepository repo) { this.repo = repo; }
+
+    public PatientDTO create(PatientDTO dto) {
+        Patient p = new Patient();
+        p.setName(dto.getName());
+        p.setGender(dto.getGender());
+        p.setContact(dto.getContact());
+        p.setEmail(dto.getEmail());
+        p.setAddress(dto.getAddress());
+        var saved = repo.save(p);
+        dto.setId(saved.getId());
+        return dto;
+    }
+
+    public PatientDTO getById(Long id) {
+        var p = repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
+        var dto = new PatientDTO();
+        dto.setId(p.getId()); dto.setName(p.getName()); dto.setGender(p.getGender());
+        dto.setContact(p.getContact()); dto.setEmail(p.getEmail()); dto.setAddress(p.getAddress());
+        return dto;
+    }
+
+    public List<PatientDTO> listAll() {
+        return repo.findAll().stream().map(p -> {
+            var dto = new PatientDTO();
+            dto.setId(p.getId()); dto.setName(p.getName()); dto.setGender(p.getGender());
+            dto.setContact(p.getContact()); dto.setEmail(p.getEmail()); dto.setAddress(p.getAddress());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+}

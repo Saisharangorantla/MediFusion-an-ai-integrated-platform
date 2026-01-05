@@ -1,0 +1,5 @@
+package com.yourorg.telemedicine.alert.ml;
+
+public class VitalTrendAnalyzer {
+
+}

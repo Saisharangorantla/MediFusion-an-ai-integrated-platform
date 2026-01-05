@@ -1,0 +1,5 @@
+package com.yourorg.authservice.client;
+
+public class PatientClient {
+
+}

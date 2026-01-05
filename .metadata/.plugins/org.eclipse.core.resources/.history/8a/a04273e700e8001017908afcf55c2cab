@@ -1,0 +1,29 @@
+package com.yourorg.telemedicine.service;
+
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import com.yourorg.telemedicine.client.PatientClient;
+
+@Service
+public class VitalSchedulerService {
+
+    private final VitalSimulatorService simulator;
+    private final PatientClient patientClient;
+
+    public VitalSchedulerService(VitalSimulatorService simulator,
+                                 PatientClient patientClient) {
+        this.simulator = simulator;
+        this.patientClient = patientClient;
+    }
+
+    @Scheduled(fixedRate = 10000)
+    public void generateVitalsForAllPatients() {
+        List<Long> patientIds = patientClient.getAllPatientIds();
+
+        patientIds.forEach(simulator::generateVitals);
+    }
+}
+
+

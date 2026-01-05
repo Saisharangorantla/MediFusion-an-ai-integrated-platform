@@ -1,0 +1,45 @@
+package com.yourorg.telemedicine.alert.service;
+
+import com.yourorg.telemedicine.alert.client.DoctorClient;
+import com.yourorg.telemedicine.alert.client.WearableClient;
+import com.yourorg.telemedicine.alert.dto.VitalReadingDto;
+import com.yourorg.telemedicine.alert.kafka.AlertProducer;
+import com.yourorg.telemedicine.alert.ml.VitalTrendAnalyzer;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AlertService {
+	@Autowired
+    private  WearableClient wearableClient;
+	@Autowired
+    private  DoctorClient doctorClient;
+	@Autowired
+    private  AlertProducer alertProducer;
+
+//  @Autowired
+    private VitalTrendAnalyzer trendAnalyzer;
+
+    public String checkVitalsAndNotify(Long patientId) {
+
+        // Fetch recent vitals (trend data)
+        List<VitalReadingDto> vitalsList =
+                wearableClient.getRecentVitals(patientId);
+
+        boolean risk = trendAnalyzer.isHealthRisk(vitalsList);
+
+        if (risk) {
+            String message = "ML Alert 🚨: Health risk trend detected for patient " + patientId;
+
+            doctorClient.notifyDoctor(patientId, message);
+            alertProducer.sendAlert(message);
+
+            return "ALERT SENT (ML BASED)";
+        }
+
+        return "Vitals stable (ML analysis)";
+    }
+}

@@ -1,0 +1,9 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.dto.HealthRecordDTO;
+
+public interface HealthRecordService {
+    HealthRecordDTO create(HealthRecordDTO dto) throws Exception;
+    HealthRecordDTO update(Long recordId, HealthRecordDTO dto) throws Exception;
+    List<HealthRecordDTO> getRecordsByPatientId(Long patientId);
+}

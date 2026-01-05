@@ -1,0 +1,15 @@
+spring.application.name=patient-service
+server.port=8083
+# Eureka Client configuration
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka
+spring.config.import=optional:]configserver:http://localhost:9500
+
+#Kafka
+spring.kafka.bootstrap-servers=localhost:9092
+spring.kafka.producer.key-serializer: org.apache.kafka.common.serialization.StringSerializer
+spring.kafka.producer.value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+#twilio
+twilio.account-sid=YOUR_TWILIO_ACCOUNT_SID
+twilio.auth-token=YOUR_TWILIO_AUTH_TOKEN
+twilio.from-number=+1234567890

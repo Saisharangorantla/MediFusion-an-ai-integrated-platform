@@ -1,0 +1,54 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.dto.DoctorDTO;
+import com.yourorg.telemedicine.entity.Doctor;
+import com.yourorg.telemedicine.repository.DoctorRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class DoctorService {
+	@Autowired
+    private final DoctorRepository repo;
+	@Autowired
+	private SmsService k;
+    public DoctorService(DoctorRepository repo) { this.repo = repo; }
+
+    public DoctorDTO create(DoctorDTO dto) {
+        Doctor d = new Doctor();
+        d.setName(dto.getName()); d.setSpecialization(dto.getSpecialization());
+        d.setContact(dto.getContact()); d.setEmail(dto.getEmail()); d.setRating(dto.getRating());
+        var saved = repo.save(d); dto.setId(saved.getId()); return dto;
+    }
+
+    public DoctorDTO getById(Long id) {
+        Doctor d = repo.findById(id).orElseThrow();
+        var dto = new DoctorDTO();
+        dto.setId(d.getId()); dto.setName(d.getName()); dto.setSpecialization(d.getSpecialization());
+        dto.setContact(d.getContact()); dto.setEmail(d.getEmail()); dto.setRating(d.getRating());
+        return dto;
+    }
+
+    public List<DoctorDTO> listAll() {
+        return repo.findAll().stream().map(d -> {
+            var dto = new DoctorDTO();
+            dto.setId(d.getId()); dto.setName(d.getName()); dto.setSpecialization(d.getSpecialization());
+            dto.setContact(d.getContact()); dto.setEmail(d.getEmail()); dto.setRating(d.getRating());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+    public void notifyDoctor(Long patientId, String message) {
+
+        // Example doctor mobile number (can be fetched from DB later)
+        String doctorPhone = "+919876543210";
+
+        String smsMessage =
+                "ALERT 🚨\nPatient ID: " + patientId + "\n" + message;
+
+        k.sendSms(doctorPhone, smsMessage);
+    }
+}

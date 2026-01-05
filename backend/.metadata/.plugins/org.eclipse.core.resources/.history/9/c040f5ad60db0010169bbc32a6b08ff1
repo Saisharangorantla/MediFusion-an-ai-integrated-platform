@@ -1,0 +1,9 @@
+spring.application.name=recommendation-service
+server.port=8082
+
+#adjust to your doctor-service port
+doctor-service.base-url=http://localhost:8082     
+patient-service.base-url=http://localhost:8081
+health-record-service.base-url=http://localhost:8083
+
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka

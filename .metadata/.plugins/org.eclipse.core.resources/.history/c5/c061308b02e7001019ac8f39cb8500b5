@@ -1,0 +1,10 @@
+package com.yourorg.telemedicine.dto;
+
+public class BaseRegisterRequest {
+    private String username;
+    private String password;
+    private String email;
+    private String role;
+    private String fullName;
+}
+

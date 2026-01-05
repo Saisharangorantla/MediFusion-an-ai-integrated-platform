@@ -1,0 +1,5 @@
+package com.yourorg.telemedicine.ai.entity;
+
+public class AIChatSessionEntity {
+
+}

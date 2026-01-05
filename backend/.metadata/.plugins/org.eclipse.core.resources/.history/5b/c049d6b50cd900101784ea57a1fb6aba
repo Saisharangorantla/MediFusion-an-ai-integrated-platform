@@ -1,0 +1,13 @@
+package com.yourorg.telemedicine.ai.dto;
+
+import lombok.Data;
+
+@Data
+public class OpenAiResponse {
+    private List<Choice> choices;
+
+    @Data
+    public static class Choice {
+        private Message message;
+    }
+}

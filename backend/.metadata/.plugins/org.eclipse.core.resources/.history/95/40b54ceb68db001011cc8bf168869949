@@ -1,0 +1,8 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.dto.HealthRecordDTO;
+
+public interface HealthRecordService {
+	HealthRecordDTO create(HealthRecordDTO dto);
+	
+}

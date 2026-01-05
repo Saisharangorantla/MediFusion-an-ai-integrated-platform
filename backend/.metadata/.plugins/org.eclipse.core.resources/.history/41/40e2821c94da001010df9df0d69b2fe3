@@ -1,0 +1,51 @@
+package com.yourorg.telemedicine.service;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yourorg.telemedicine.client.DoctorClient;
+import com.yourorg.telemedicine.dto.DoctorSummaryDTO;
+import com.yourorg.telemedicine.dto.RecommendationRequestDTO;
+import com.yourorg.telemedicine.dto.RecommendedDoctorDTO;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class RecommendationServiceImpl implements RecommendationService {
+@Autowired
+ private  DoctorClient doctorClient;
+
+// public RecommendationServiceImpl(DoctorClient doctorClient) {
+//     this.doctorClient = doctorClient;
+// }
+
+ @Override
+ public List<RecommendedDoctorDTO> recommendDoctors(RecommendationRequestDTO request) {
+     List<DoctorSummaryDTO> candidates =
+             doctorClient.findDoctors(request.getSpecialization(), request.getCity());
+
+     // Simple scoring: rating only (you can add distance, history, etc.)
+     List<RecommendedDoctorDTO> scored = candidates.stream()
+             .map(d -> {
+                 RecommendedDoctorDTO dto = new RecommendedDoctorDTO();
+                 dto.setDoctorId(d.getId());
+                 dto.setName(d.getName());
+                 dto.setSpecialization(d.getSpecialization());
+                 dto.setCity(d.getCity());
+                 dto.setRating(d.getRating());
+                 double score = d.getRating() != null ? d.getRating() : 0.0;
+                 dto.setExperienceYears(d.getExperienceYears());
+                 return dto;
+             })
+             .sorted(Comparator.comparing(RecommendedDoctorDTO::getScore).reversed())
+             .collect(Collectors.toList());
+
+     int limit = request.getLimit() != null ? request.getLimit() : 5;
+     return scored.stream().limit(limit).collect(Collectors.toList());
+ }
+
+
+}

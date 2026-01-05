@@ -1,0 +1,29 @@
+package com.yourorg.telemedicine.ai.client;
+
+@Component
+@RequiredArgsConstructor
+public class OpenAIClient {
+
+
+private final WebClient webClient;
+
+
+public Mono<String> chat(String prompt) {
+return webClient.post()
+.bodyValue("""
+{
+"model": "gpt-4.1",
+"messages": [
+{"role": "user", "content": "%s"}
+]
+}
+""".formatted(prompt))
+.retrieve()
+.bodyToMono(JsonNode.class)
+.map(json -> json.get("choices")
+.get(0)
+.get("message")
+.get("content")
+.asText());
+}
+}

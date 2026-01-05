@@ -1,0 +1,81 @@
+package com.yourorg.telemedicine.service;
+
+import com.yourorg.telemedicine.dto.MessageDto;
+import com.yourorg.telemedicine.dto.PatientDTO;
+import com.yourorg.telemedicine.dto.UserDTO;
+import com.yourorg.telemedicine.entity.Patient;
+import com.yourorg.telemedicine.repository.PatientRepository;
+
+
+
+import com.yourorg.telemedicine.exception.ResourceNotFoundException;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class PatientServiceImpl implements PatientService {
+	@Autowired
+    private  PatientRepository repo;
+	@Autowired
+	private KafkaTemplate<String, String> template;
+	
+
+
+//    public PatientService(PatientRepository repo) { this.repo = repo; }
+
+    public Patient create(PatientDTO dto) {
+        Patient p = new Patient();
+        BeanUtils.copyProperties(dto, p);
+        Patient P=repo.save(p);
+        MessageDto msgDto=new MessageDto();
+        msgDto.setId(p.getId());
+		msgDto.setName(dto.getName());
+		msgDto.setEmail(dto.getEmail());
+		msgDto.setContact(dto.getContact());
+		msgDto.setMsg("patient added Successfully");
+		return p;
+    }
+
+    public PatientDTO getById(Long id) {
+        var p = repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
+        var dto = new PatientDTO();
+        dto.setId(p.getId()); dto.setName(p.getName()); dto.setGender(p.getGender());
+        dto.setContact(p.getContact()); dto.setEmail(p.getEmail()); dto.setAddress(p.getAddress());
+        return dto;
+    }
+
+    public List<PatientDTO> listAll() {
+        return repo.findAll().stream().map(p -> {
+            var dto = new PatientDTO();
+            dto.setId(p.getId()); dto.setName(p.getName()); dto.setGender(p.getGender());
+            dto.setContact(p.getContact()); dto.setEmail(p.getEmail()); dto.setAddress(p.getAddress());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+//    public PatientDTO getByUsername(String username) {
+//
+//        Patient patient = repo.findByUsername(username)
+//                .orElseThrow(() -> new RuntimeException("Patient not found"));
+//
+//        return mapToDTO(patient);
+//    }
+//
+//    private PatientDTO mapToDTO(Patient p) {
+//        PatientDTO dto = new PatientDTO();
+//        dto.setId(p.getId());
+//        dto.setName(p.getName());
+//        dto.setGender(p.getGender());
+//        dto.setEmail(p.getEmail());
+//        dto.setAddress(null);
+//        return dto;
+//    }
+}
+

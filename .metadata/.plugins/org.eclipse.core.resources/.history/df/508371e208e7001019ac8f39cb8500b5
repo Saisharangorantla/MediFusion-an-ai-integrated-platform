@@ -1,0 +1,97 @@
+package com.yourorg.telemedicine.config;
+
+import io.jsonwebtoken.Claims;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+
+@Component
+public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
+
+    private final JwtUtil jwtUtil;
+
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/auth/login",
+            "/auth/register",
+            "/wearable/fitbit/auth-url",
+            "/wearable/fitbit/callback",
+            "/wearable/apple/auth-url",
+            "/wearable/apple/callback",
+            "/actuator/health",
+            "/actuator/info"
+    );
+
+    @Autowired
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String path = exchange.getRequest().getURI().getPath();
+        String method = exchange.getRequest().getMethod().name();
+
+        // Allow public paths without JWT validation
+        if (isPublicPath(path)) {
+            System.out.println("JWT Filter: Allowing public path: " + path + " method: " + method);
+            return chain.filter(exchange);
+        }
+        
+        System.out.println("JWT Filter: Checking authentication for path: " + path);
+
+        String authHeader = exchange.getRequest()
+                .getHeaders()
+                .getFirst(HttpHeaders.AUTHORIZATION);
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("JWT Filter: Missing or invalid Authorization header for path: " + path);
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        String token = authHeader.substring(7);
+
+        if (!jwtUtil.validateToken(token)) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        Claims claims = jwtUtil.getAllClaimsFromToken(token);
+
+        ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate()
+                .header("X-User-Name", claims.getSubject())
+                .header("X-User-Role", String.valueOf(claims.get("role")));
+        // Add userId header if present in token
+        Object userId = claims.get("userId");
+        if (userId != null) {
+        	requestBuilder.header("X-User-Id", String.valueOf(userId));
+        }
+        
+        ServerHttpRequest mutatedRequest = requestBuilder.build();
+
+        return chain.filter(exchange.mutate().request(mutatedRequest).build());
+    }
+
+
+    private boolean isPublicPath(String path) {
+        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+    }
+
+    @Override
+    public int getOrder() {
+        // Run early but after Spring Security filter chain
+        // Spring Security typically runs at -100, so we run after it
+        return -50;
+    }
+}
+
+

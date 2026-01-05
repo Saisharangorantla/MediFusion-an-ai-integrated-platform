@@ -1,0 +1,38 @@
+package com.yourorg.telemedicine.controller;
+
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.yourorg.telemedicine.dto.RecommendationRequestDTO;
+import com.yourorg.telemedicine.dto.RecommendedDoctorDTO;
+import com.yourorg.telemedicine.service.RecommendationService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/recommendations")
+public class RecommendationController {
+@Autowired
+ private  RecommendationService recommendationService;
+
+// public RecommendationController(RecommendationService recommendationService) {
+//     this.recommendationService = recommendationService;
+// }
+
+ @GetMapping("/suggesteddoctors")
+ public ResponseEntity<List<RecommendedDoctorDTO>> recommendDoctors(
+		 @RequestBody RecommendationRequestDTO request) {
+
+     RecommendationRequestDTO req = new RecommendationRequestDTO();
+     req.setSpecialization(specialization);
+     req.setCity(city);
+     req.setPatientId(patientId);
+     req.setLimit(limit);
+
+     List<RecommendedDoctorDTO> result = recommendationService.recommendDoctors(req);
+     return ResponseEntity.ok(result);
+ }
+}

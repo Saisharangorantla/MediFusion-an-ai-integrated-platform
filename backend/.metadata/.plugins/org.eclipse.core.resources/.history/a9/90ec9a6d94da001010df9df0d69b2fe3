@@ -1,0 +1,18 @@
+package com.yourorg.telemedicine.client;
+
+import java.util.List;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import com.yourorg.telemedicine.dto.RecommendationRequestDTO;
+
+@FeignClient(name = "recommendation-service")
+public interface RecommendationClient {
+
+    @PostMapping("/recommendations")
+    List<RecommendedDoctorDTO> getRecommendedDoctors(
+            @RequestBody RecommendationRequestDTO request
+    );
+}

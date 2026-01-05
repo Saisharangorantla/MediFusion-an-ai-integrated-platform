@@ -1,0 +1,35 @@
+package com.yourorg.telemedicine.dto;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class DoctorDTO {
+    // ID is auto-generated, not required for creation
+    private Long id;
+    
+    // Required fields (matching Doctor entity @Column(nullable = false))
+    @NotBlank(message = "Doctor name is required")
+    private String Fullname;
+    
+    @NotBlank(message = "Specialization is required")
+    private String specialization;
+    
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email should be valid")
+    private String email;
+    
+    // Optional fields (can be null)
+    @Column(nullable = false)
+    private String contact;
+    private Integer experienceYears;
+    private String qualification;
+    private String hospital;
+    private Double consultationFee;
+    private String address;
+    
+    private Long userId;
+
+    // Note: rating is not included - it's calculated from patient reviews and set separately
+}

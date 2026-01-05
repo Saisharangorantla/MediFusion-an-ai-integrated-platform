@@ -1,0 +1,43 @@
+package com.yourorg.telemedicine.controller;
+
+import com.yourorg.telemedicine.dto.DoctorDTO;
+import com.yourorg.telemedicine.entity.Doctor;
+
+import com.yourorg.telemedicine.service.Doctorservice;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/doctors")
+public class DoctorController {
+	@Autowired
+    private  Doctorservice service;
+  
+	
+	@PreAuthorize("hasRole('DOCTOR')")
+    @PostMapping("/createdoctor")
+    public ResponseEntity<Doctor> create(@RequestBody DoctorDTO dto) {
+        return ResponseEntity.ok(service.create(dto));
+    }
+	@PreAuthorize("hasAnyRole('PATIENT','DOCTOR')")
+    @GetMapping("/{id}")
+    public ResponseEntity<DoctorDTO> getDoctorByID(@PathVariable Long id) {
+        return ResponseEntity.ok(service.getById(id));
+    }
+
+    @GetMapping("/alldoctors")
+    public ResponseEntity<List<DoctorDTO>> list() {
+        return ResponseEntity.ok(service.listAll());
+    }
+    @PostMapping("/doctors/{doctorId}/notify")
+    public void notifyDoctor(@PathVariable Long doctorId,
+    							@RequestParam Long patientId,
+                             @RequestParam String message) {
+        service.notifyDoctor(doctorId,patientId,message);
+    }
+}

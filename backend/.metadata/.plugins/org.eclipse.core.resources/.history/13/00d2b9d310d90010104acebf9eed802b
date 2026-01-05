@@ -1,0 +1,21 @@
+package com.yourorg.telemedicine.controller;
+
+import com.yourorg.telemedicine.dto.AppointmentDTO;
+import com.yourorg.telemedicine.service.AppointmentService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/appointments")
+public class AppointmentController {
+	@Autowired
+    private final AppointmentService service;
+    public AppointmentController(AppointmentService service) { this.service = service; }
+
+    @PostMapping
+    public ResponseEntity<AppointmentDTO> create(@RequestBody AppointmentDTO dto) throws Exception {
+        return ResponseEntity.ok(service.create(dto));
+    }
+}
