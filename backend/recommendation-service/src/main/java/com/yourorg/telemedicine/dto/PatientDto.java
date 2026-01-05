@@ -1,0 +1,11 @@
+package com.yourorg.telemedicine.dto;
+
+import lombok.Data;
+
+@Data
+public class PatientDto {
+    private Long id;
+    private String name;
+    private String phone;
+    // getters + setters
+}

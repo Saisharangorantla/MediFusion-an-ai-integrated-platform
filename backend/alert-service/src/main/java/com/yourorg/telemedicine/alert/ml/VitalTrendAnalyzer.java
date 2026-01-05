@@ -1,0 +1,48 @@
+package com.yourorg.telemedicine.alert.ml;
+
+import com.yourorg.telemedicine.alert.dto.VitalData;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Component
+public class VitalTrendAnalyzer {
+
+    // Simple trend detection logic,rule-based trend analysis(basic ml)
+    public boolean isHealthRisk(List<VitalData> readings) {
+
+        if (readings.size() < 3) return false;
+
+        int highHeartRateCount = 0;
+        int lowSpo2Count = 0;
+        int highSystolicBPCount = 0;
+        int highDiastolicBPCount = 0;
+
+        for (VitalData v : readings) {
+            if (v.getHeartRate() > 110) highHeartRateCount++;
+            if (v.getSpo2() < 92) lowSpo2Count++;
+            if (v.getSystolicBP() > 140) {
+                highSystolicBPCount++;
+            }
+
+            if (v.getDiastolicBP() > 90) {
+                highDiastolicBPCount++;
+            }
+        }
+
+        // Trend rule: multiple abnormal readings
+        return highHeartRateCount >= 2 || lowSpo2Count >= 2 || highSystolicBPCount >= 2
+                || highDiastolicBPCount >= 2;
+    }
+    public boolean isCriticalRisk(List<VitalData> readings) {
+
+        for (VitalData v : readings) {
+            if (v.getHeartRate() > 140) return true;
+            if (v.getSpo2() < 85) return true;
+            if (v.getSystolicBP() > 180) return true;
+            if (v.getDiastolicBP() > 120) return true;
+        }
+        return false;
+    }
+
+}

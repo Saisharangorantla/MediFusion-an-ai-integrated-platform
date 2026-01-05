@@ -1,0 +1,49 @@
+package com.yourorg.telemedicine.ai.service;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+@Service
+public class LlamaServiceImpl implements LlamaService {
+
+    @Value("${llama.api.key}")
+    private String apiKey;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Override
+    public String ask(String prompt) {
+
+        String url = "https://api.groq.com/openai/v1/chat/completions";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
+
+        Map<String, Object> message = Map.of(
+                "role", "user",
+                "content", prompt
+        );
+
+        Map<String, Object> body = Map.of(
+        		"model", "llama-3.1-8b-instant",
+                "messages", List.of(message)
+        );
+
+        HttpEntity<Map<String, Object>> entity =
+                new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map> response =
+                restTemplate.postForEntity(url, entity, Map.class);
+
+        Map choice = (Map) ((List) response.getBody().get("choices")).get(0);
+        Map msg = (Map) choice.get("message");
+
+        return msg.get("content").toString();
+    }
+}

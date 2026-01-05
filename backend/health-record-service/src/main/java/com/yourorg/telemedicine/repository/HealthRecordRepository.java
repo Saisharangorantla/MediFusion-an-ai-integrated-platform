@@ -1,0 +1,11 @@
+package com.yourorg.telemedicine.repository;
+
+import com.yourorg.telemedicine.entity.HealthRecord;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long> {
+    List<HealthRecord> findByPatientId(Long patientId);
+}

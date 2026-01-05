@@ -1,0 +1,38 @@
+package com.yourorg.telemedicine.alert.controller;
+
+
+import com.yourorg.telemedicine.alert.repo.AlertRepository;
+import com.yourorg.telemedicine.alert.service.AlertService;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.yourorg.telemedicine.alert.dto.VitalData;
+import com.yourorg.telemedicine.alert.entity.Alert;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/alerts")
+public class AlertController {
+
+    private final AlertService alertService;
+    @Autowired
+    private AlertRepository alertRepository;
+
+
+    public AlertController(AlertService alertService) {
+        this.alertService = alertService;
+    }
+
+    @PostMapping("/check")
+    public String checkVitals(@RequestBody VitalData vitalData) {
+        return alertService.checkVitalsAndNotify(vitalData.getPatientId());
+    }
+
+    @GetMapping("/patient/{patientId}")
+    public List<Alert> getAlerts(@PathVariable Long patientId) {
+        return alertRepository.findByPatientIdOrderByCreatedAtDesc(patientId);
+    }
+}
+

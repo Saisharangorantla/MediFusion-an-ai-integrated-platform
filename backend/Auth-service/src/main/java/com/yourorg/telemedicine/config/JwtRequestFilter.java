@@ -1,0 +1,110 @@
+package com.yourorg.telemedicine.config;
+
+
+
+import java.io.IOException;
+/*
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+*/
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.yourorg.telemedicine.service.JwtUserDetailsService;
+import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import com.yourorg.telemedicine.config.JwtTokenProvider;
+
+@Component
+@CrossOrigin
+public class JwtRequestFilter extends OncePerRequestFilter {
+
+	@Autowired
+	private JwtUserDetailsService jwtUserDetailsService;
+
+	@Autowired
+	private JwtTokenProvider jwtTokenUtil;
+
+	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) {
+	    String path = request.getRequestURI();
+	    String method = request.getMethod();
+
+	    // ✅ Skip OPTIONS (CORS preflight)
+	    if ("OPTIONS".equalsIgnoreCase(method)) {
+	        return true;
+	    }
+
+	    // ✅ Skip public auth APIs
+	    return path.startsWith("/auth/login")
+	        || path.startsWith("/auth/register");
+	}
+
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+			throws ServletException, IOException {
+System.out.println("do Filter ......");
+		final String requestTokenHeader = request.getHeader("Authorization");
+	    String authHeader = request.getHeader("Authorization");
+
+	    // ✅ If no token → just continue (public endpoints)
+	    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+	        chain.doFilter(request, response);
+	        return;
+	    }
+System.out.println("Token from client : "+requestTokenHeader);
+		String username = null;
+		String jwtToken = null;
+		// JWT Token is in the form "Bearer token". Remove Bearer word and get only the Token
+		if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
+			jwtToken = requestTokenHeader.substring(7);
+			try {
+				//to get the uname from the token
+				username = jwtTokenUtil.getUsernameFromToken(jwtToken);
+				System.out.println("username : "+username);
+			} catch (IllegalArgumentException e) {
+				System.out.println("Unable to get JWT Token");
+			} catch (ExpiredJwtException e) {
+				System.out.println("JWT Token has expired");
+			}
+		} else {
+			logger.warn("JWT Token does not begin with Bearer String");
+		}
+
+		//Once we get the token validate it.
+		if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+			//from the username gets the password, role and store in UserDetails so that spring context 
+			//can knows abt the user 
+			UserDetails userDetails = this.jwtUserDetailsService.loadUserByUsername(username);
+			// if token is valid configure Spring Security to manually set authentication
+			if (jwtTokenUtil.validateToken(jwtToken, userDetails)) {
+
+				UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
+						new UsernamePasswordAuthenticationToken(
+						userDetails, null, userDetails.getAuthorities());
+				usernamePasswordAuthenticationToken
+						.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+				// After setting the Authentication in the context, we specify
+				// that the current user is authenticated. So it passes the Spring Security Configurations successfully.
+				SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+			}
+		}
+		System.out.println("----chain do filtering ....");
+		chain.doFilter(request, response); //chain (invoke) another filter
+	}
+
+	
+
+}
+

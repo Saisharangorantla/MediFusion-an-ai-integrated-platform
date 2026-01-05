@@ -1,0 +1,46 @@
+
+package com.yourorg.telemedicine.controller;
+
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import com.yourorg.telemedicine.entity.VitalData;
+import com.yourorg.telemedicine.repository.VitalRepository;
+import com.yourorg.telemedicine.service.VitalSimulatorService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/wearable")
+
+public class VitalController {
+	@Autowired
+    private  VitalSimulatorService simulator;
+	@Autowired
+    private  VitalRepository repo;
+
+ 
+
+    @PostMapping("/simulate/{patientId}")
+    public VitalData simulate(@PathVariable Long patientId) {
+        return simulator.generateVitals(patientId);
+    }
+
+    @GetMapping("/vitals/recent/{patientId}")
+    public List<VitalData> getRecentVitals(@PathVariable Long patientId) {
+        return repo.findByPatientId(patientId);
+    }
+    @GetMapping("/latest/{patientId}")
+    public VitalData getLatest(@PathVariable Long patientId) {
+        return repo.findTopByPatientIdOrderByRecordedAtDesc(patientId);
+    }
+    @GetMapping("/vitals/{patientId}")
+    public List<VitalData> getAllVitals(@PathVariable Long patientId) {
+        return repo.findByPatientId(patientId);
+    }
+
+
+
+}

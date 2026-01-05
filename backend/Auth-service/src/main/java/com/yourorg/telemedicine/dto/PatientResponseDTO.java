@@ -1,0 +1,15 @@
+package com.yourorg.telemedicine.dto;
+
+import lombok.Data;
+
+@Data
+public class PatientResponseDTO {
+    private Long id;
+    private String fullname;
+    private String gender;
+    private String contact;
+    private String email;
+    private String address;
+    private Long userId;
+}
+

@@ -1,0 +1,14 @@
+package com.yourorg.authservice.client;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import com.yourorg.telemedicine.dto.PatientCreateRequest;
+
+@FeignClient(name = "PATIENT-SERVICE")
+public interface PatientClient {
+
+    @PostMapping("/patients/create")
+    void createPatient(@RequestBody PatientCreateRequest request);
+}
