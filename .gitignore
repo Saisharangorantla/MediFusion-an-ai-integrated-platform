@@ -1,13 +1,10 @@
+# Common ignores
 node_modules/
 target/
-.mvn/
-*.class
 .env
 secrets_backup.txt
-.vscode/
-.idea/
+*.class
 *.log
-dist/
-build/
-coverage/
-.DS_Store
+
+# Removing frontend from GitHub integration
+frontend/
